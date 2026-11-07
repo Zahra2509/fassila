@@ -361,3 +361,19 @@ input:disabled { background: #fff; color: var(--ink-70); }
 
 /* Without the local logo file, keep breathing room under the wordmark */
 .wordmark + .title-ar { margin-top: 16px; }
+
+/* ── Song titles in their own script ───────────── */
+.secret-title .song-title { display: block; }
+.secret-title .song-artist { display: block; font-family: var(--f-body); font-size: .55em; color: var(--ink-70); margin-top: 2px; }
+.secret-title [lang="ar"].song-title { font-family: var(--f-ar); font-weight: 700; font-size: 1.25em; line-height: 1.5; }
+.secret-title [lang="ar"].song-artist { font-family: var(--f-ar); font-size: .7em; }
+.answer[lang="ar"] { font-family: var(--f-ar); font-weight: 700; font-size: 2.1rem; line-height: 1.5; color: var(--shade); }
+
+/* ── Host music block ──────────────────────────── */
+.music { text-align: center; margin: 28px auto 0; max-width: 560px; padding-top: 22px; border-top: 1px solid var(--gold); }
+.yt-frame { display: inline-block; border: 1px solid var(--gold); padding: 6px; background: #fff; line-height: 0; max-width: 100%; }
+.yt-frame iframe { display: block; max-width: 100%; }
+.music-buttons { margin-top: 14px; }
+.music-buttons .btn { height: 44px; font-size: .64rem; padding: 0 10px; }
+#music-status { margin-top: 10px; min-height: 1.4em; }
+#music-status a { color: var(--maj); text-decoration-color: var(--gold); text-underline-offset: 3px; }

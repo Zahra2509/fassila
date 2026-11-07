@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 brand-kit/
 assets/
+songs.private.js
+Game tracks.txt

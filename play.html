@@ -31,7 +31,7 @@
         <p class="join-title">Pick a nickname</p>
         <p class="muted">Short and silly works best.</p>
         <form id="join-form" class="inline" autocomplete="off">
-          <input id="nick-input" type="text" maxlength="16" placeholder="Your nickname" aria-label="Nickname" required>
+          <input id="nick-input" type="text" dir="auto" maxlength="16" placeholder="Your nickname" aria-label="Nickname" required>
           <button class="btn btn-primary" type="submit">Let's go</button>
         </form>
         <p id="join-msg" class="msg"></p>
@@ -55,10 +55,10 @@
         <div id="panel-guess" class="panel" hidden>
           <span class="label">What's this song?</span>
           <form id="guess-form" class="inline" autocomplete="off">
-            <input id="guess-input" type="text" maxlength="100" placeholder="Type your guess..." aria-label="Your guess">
+            <input id="guess-input" type="text" dir="auto" maxlength="100" placeholder="Type your guess..." aria-label="Your guess">
             <button class="btn btn-primary" type="submit">Guess!</button>
           </form>
-          <div id="guess-locked" class="locked" hidden>Your guess: <strong id="guess-locked-text"></strong></div>
+          <div id="guess-locked" class="locked" hidden>Your guess: <strong id="guess-locked-text" dir="auto"></strong></div>
           <p id="guess-msg" class="msg"></p>
         </div>
 
@@ -66,7 +66,7 @@
         <div id="panel-claim" class="panel" hidden>
           <span class="label">The answer was</span>
           <p id="answer-title" class="answer"></p>
-          <p class="your-guess">You said: <strong id="claim-guess"></strong></p>
+          <p class="your-guess">You said: <strong id="claim-guess" dir="auto"></strong></p>
           <div id="claim-buttons" class="btn-row">
             <button id="btn-got" class="btn btn-primary" type="button">I got it!</button>
             <button id="btn-not" class="btn btn-ghost" type="button">Not me</button>

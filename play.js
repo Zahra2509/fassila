@@ -174,6 +174,9 @@
     if (g.announced) {
       show("panel-claim");
       $("answer-title").textContent = g.announced;
+      const arabicAnswer = /[؀-ۿ]/.test(g.announced);
+      $("answer-title").lang = arabicAnswer ? "ar" : "";
+      $("answer-title").dir = arabicAnswer ? "rtl" : "auto";
       $("claim-guess").textContent = state.myGuess || "nothing";
       const msg = $("claim-msg");
       const buttons = $("claim-buttons");

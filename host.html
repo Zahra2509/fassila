@@ -44,6 +44,17 @@
           <div class="song-dots" id="song-dots" aria-label="Songs announced so far"></div>
         </section>
 
+        <section class="music" id="music">
+          <span class="label" id="music-label">Music</span>
+          <div class="yt-frame"><div id="yt-player"></div></div>
+          <div class="btn-row music-buttons">
+            <button id="btn-play-guess" class="btn btn-ghost" type="button">Play clip</button>
+            <button id="btn-play-reveal" class="btn btn-ghost" type="button">Play reveal</button>
+            <button id="btn-stop" class="btn btn-ghost" type="button">Stop</button>
+          </div>
+          <p class="hint" id="music-status"></p>
+        </section>
+
         <section class="controls">
           <div class="btn-row">
             <button id="btn-prev" class="btn btn-ghost" type="button">Previous song</button>
@@ -80,6 +91,8 @@
   </div>
 
   <script src="config.js"></script>
+  <!-- Real titles and clip times. Local only (in .gitignore); the page still works without it. -->
+  <script src="songs.private.js"></script>
   <script src="common.js"></script>
   <script src="host.js"></script>
 </body>

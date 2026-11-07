@@ -12,6 +12,20 @@
     del(k) { try { localStorage.removeItem(k); } catch (e) {} },
   };
 
+  // Real titles, artists and clip times come from songs.private.js (local only), if it's there.
+  if (typeof SONG_DETAILS === "object" && SONG_DETAILS) {
+    SONGS.forEach((s) => Object.assign(s, SONG_DETAILS[s.id] || {}));
+  }
+  const ARABIC = /[؀-ۿ]/;
+  const isArabic = (s) => s.lang === "ar" || ARABIC.test(s.title || "");
+  // What players see after "Announce answer": "Title — Artist"
+  const answerText = (s) => (s.artist ? `${s.title} — ${s.artist}` : s.title);
+  function songHtml(s) {
+    const attrs = isArabic(s) ? ' lang="ar" dir="rtl"' : ` lang="${s.lang || "en"}" dir="ltr"`;
+    return `<span class="song-title"${attrs}>${F.escapeHtml(s.title)}</span>` +
+      (s.artist ? `<span class="song-artist"${attrs}>${F.escapeHtml(s.artist)}</span>` : "");
+  }
+
   let qrLib = null; // promise for the QR library script
   setupQr(); // works even before the database connects
 
@@ -72,7 +86,8 @@
 
     $("phase-label").textContent = isFinal ? "Final round" : "Now playing";
     $("big-song").textContent = isFinal ? "Final round!" : `Song ${i + 1} of ${SONGS.length}`;
-    $("secret-title").textContent = isFinal ? "Players are filling in the blanks" : song.title;
+    $("secret-title").innerHTML = isFinal ? "Players are filling in the blanks" : songHtml(song);
+    renderMusic(song, g);
     $("secret-note").hidden = isFinal;
     $("cd-num").textContent = `${song.letterIndex + 1} (${F.LETTERS[song.letterIndex]})`;
 
@@ -119,7 +134,7 @@
     $("board-list").innerHTML += rows.map((r, k) => `
       <li class="${r.nick === winner ? "win" : ""}">
         <span class="rank">${r.nick === winner ? "WIN" : String(k + 1).padStart(2, "0")}</span>
-        <span class="name">${F.escapeHtml(r.nick)}</span>
+        <span class="name" dir="auto">${F.escapeHtml(r.nick)}</span>
         <span class="score">${r.count}/${F.TOTAL}</span>
         <span class="bar"><span style="width:${(r.count / F.TOTAL) * 100}%"></span></span>
       </li>`).join("");
@@ -129,6 +144,7 @@
   function goTo(i) {
     if (!state.game || i < 0 || i >= SONGS.length) return;
     db.update("game", { currentSong: i, announced: null });
+    playClip(i, "guess"); // new song: play its guessing clip
   }
   $("btn-prev").addEventListener("click", () => goTo(state.game.currentSong - 1));
   $("btn-next").addEventListener("click", () => goTo(state.game.currentSong + 1));
@@ -138,7 +154,8 @@
     if (!g || g.phase !== "songs" || g.announced) return;
     announcedSet.add(g.currentSong);
     saveAnnounced();
-    db.set("game/announced", SONGS[g.currentSong].title);
+    db.set("game/announced", answerText(SONGS[g.currentSong]).slice(0, 200));
+    playClip(g.currentSong, "reveal"); // answer is out: play the reveal clip
   });
 
   $("btn-final").addEventListener("click", () => {
@@ -146,15 +163,135 @@
     if (!g || g.phase !== "songs" || g.winner) return;
     const left = SONGS.length - SONGS.filter((_, j) => announcedSet.has(j)).length;
     if (left > 0 && !confirm(`${left} song${left === 1 ? " hasn't" : "s haven't"} been announced yet. Start the final round anyway? There's no going back to the songs.`)) return;
+    stopClip("Music off for the final round.");
     db.update("game", { phase: "final", announced: null });
   });
 
   $("btn-reset").addEventListener("click", async () => {
     if (!confirm("Reset the whole game? Every player loses their CDs and guesses.")) return;
+    stopClip("");
     announcedSet = new Set();
     store.del(ANNOUNCED_KEY);
     await db.update("", { game: freshGame(), players: null, guesses: null, claims: null });
   });
+
+  // ── Music: YouTube clips ────────────────────────────────
+  // Uses YouTube's official embedded player: nothing is downloaded. Sign in to YouTube
+  // (Premium) in this browser to skip ads. Clips fade out over the last FADE seconds.
+  const FADE = 0.8;
+  let yt = null;          // YT.Player
+  let ytReady = null;     // promise, resolves when the player can take commands
+  let monitor = null;     // interval checking the clip's end
+  let playing = null;     // { index, kind, end }
+  let loadedId = null;    // video currently loaded in the player
+
+  const toSec = (v) => {
+    if (typeof v === "number") return v;
+    const p = String(v || "0").trim().split(":").map(Number);
+    return p.reduce((acc, n) => acc * 60 + (n || 0), 0);
+  };
+  const fmt = (sec) => `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, "0")}`;
+  const clipRange = (s, kind) => (s[kind] ? [toSec(s[kind][0]), toSec(s[kind][1])] : null);
+
+  function ensurePlayer(videoId) {
+    if (ytReady) return ytReady;
+    ytReady = new Promise((resolve, reject) => {
+      const create = () => {
+        yt = new YT.Player("yt-player", {
+          width: 356, height: 200, videoId,
+          playerVars: { rel: 0, playsinline: 1, modestbranding: 1 },
+          events: { onReady: () => resolve(yt), onError: (e) => onYtError(e) },
+        });
+      };
+      if (window.YT && window.YT.Player) return create();
+      window.onYouTubeIframeAPIReady = create;
+      F.loadScript("https://www.youtube.com/iframe_api").catch((e) => { ytReady = null; reject(e); });
+    });
+    return ytReady;
+  }
+
+  function onYtError(e) {
+    clearInterval(monitor);
+    playing = null;
+    const s = SONGS[state.game ? state.game.currentSong : 0];
+    const link = s.youtube ? `https://music.youtube.com/watch?v=${s.youtube}` : s.link;
+    setMusicStatus(`YouTube won't play this one here (error ${e.data}).`, link);
+  }
+
+  function setMusicStatus(text, link) {
+    const el = $("music-status");
+    el.textContent = text;
+    if (link) {
+      const a = document.createElement("a");
+      a.href = link; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = " Open it on YouTube Music";
+      el.appendChild(a);
+    }
+  }
+
+  async function playClip(index, kind) {
+    const s = SONGS[index];
+    const range = clipRange(s, kind);
+    if (!s.youtube || !range) {
+      stopClip("");
+      setMusicStatus(`No video for song ${index + 1} yet. Play it yourself.`, s.link);
+      return;
+    }
+    const [start, end] = range;
+    try {
+      await ensurePlayer(s.youtube);
+    } catch (e) {
+      setMusicStatus("Couldn't load YouTube. Check the internet connection.", s.link);
+      return;
+    }
+    clearInterval(monitor);
+    playing = { index, kind, end };
+    yt.setVolume(100);
+    yt.loadVideoById({ videoId: s.youtube, startSeconds: start });
+    loadedId = s.youtube;
+    setMusicStatus(`Playing the ${kind === "guess" ? "guessing clip" : "reveal"}: ${fmt(start)} to ${fmt(end)}`);
+    monitor = setInterval(() => {
+      if (!yt || !playing) return;
+      const t = yt.getCurrentTime ? yt.getCurrentTime() : 0;
+      if (t < start - 1) return; // still seeking
+      const left = end - t;
+      if (left <= 0) { stopClip(kind === "guess" ? "Clip done. Replay it if they beg." : "Reveal done."); return; }
+      if (left < FADE) yt.setVolume(Math.max(0, Math.round((left / FADE) * 100)));
+    }, 80);
+  }
+
+  function stopClip(message) {
+    clearInterval(monitor);
+    playing = null;
+    if (yt && yt.pauseVideo) { yt.pauseVideo(); yt.setVolume(100); }
+    if (message !== undefined) setMusicStatus(message);
+  }
+
+  function renderMusic(song, g) {
+    const isFinal = g.phase === "final";
+    $("music").hidden = isFinal;
+    if (isFinal) return;
+    const hasVideo = !!song.youtube;
+    const guess = clipRange(song, "guess");
+    const reveal = clipRange(song, "reveal");
+    $("btn-play-guess").textContent = guess ? `Play clip ${fmt(guess[0])}–${fmt(guess[1])}` : "Play clip";
+    $("btn-play-reveal").textContent = reveal ? `Play reveal ${fmt(reveal[0])}–${fmt(reveal[1])}` : "Play reveal";
+    $("btn-play-guess").disabled = !hasVideo || !guess;
+    $("btn-play-reveal").disabled = !hasVideo || !reveal;
+    $("btn-stop").disabled = !hasVideo;
+    if (hasVideo && !ytReady) { loadedId = song.youtube; ensurePlayer(song.youtube).catch(() => {}); }
+    // Keep the idle player on the current song (e.g. after a reset or Previous song)
+    if (hasVideo && yt && yt.cueVideoById && !playing && loadedId !== song.youtube) {
+      yt.cueVideoById(song.youtube);
+      loadedId = song.youtube;
+    }
+    if (!hasVideo && !playing) setMusicStatus(`No video for this song yet. Play it yourself.`, song.link);
+    else if (hasVideo && !playing && !$("music-status").textContent) setMusicStatus("Press Next song to start, or play the clip from here.");
+  }
+
+  $("btn-play-guess").addEventListener("click", () => state.game && playClip(state.game.currentSong, "guess"));
+  $("btn-play-reveal").addEventListener("click", () => state.game && playClip(state.game.currentSong, "reveal"));
+  $("btn-stop").addEventListener("click", () => stopClip("Stopped."));
 
   // ── QR code ─────────────────────────────────────────────
   function defaultPlayerUrl() {

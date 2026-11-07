@@ -87,6 +87,27 @@ Pick one. Both are free.
 
 ---
 
+## Music clips (host only)
+
+The host page can play each song's clips from YouTube's official embedded player. Nothing is downloaded. Sign in to YouTube (Premium) in the host browser to skip ads.
+
+- **Next song / Previous song** plays that song's *guessing* clip (e.g. 1:00–1:05) and stops with a short fade.
+- **Announce answer** plays the *reveal* clip (e.g. 1:20–1:50).
+- **Play clip / Play reveal / Stop** let you replay or cut it.
+- The music stops for the final round.
+
+The real titles, artists, video IDs and clip times live in **`songs.private.js`**. That file is in `.gitignore`, so it stays on your laptop and guests can't read the answers on GitHub. Set `lang: "ar"` for Arabic songs: their title and artist then show right-to-left in Arabic type, on the host screen and on players' phones when announced.
+
+Because that file is local, **open the host page from your laptop folder**, not from GitHub Pages. Players still use the public GitHub Pages link, and both sides sync through Firebase:
+
+```bash
+python -m http.server 8080
+```
+
+Then open `http://localhost:8080/host.html`, and in **Join the party** paste the public player link once (`https://…github.io/fassila/play.html`) and press **Save**, so the QR code sends guests to the right place.
+
+The YouTube player shows the video, which gives away the answer. Keep the host screen to yourself rather than projecting it.
+
 ## How to host a round
 
 1. Players scan the QR code and pick a nickname. They show up under **Live progress**.
