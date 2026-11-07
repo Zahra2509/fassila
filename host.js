@@ -97,10 +97,10 @@
     $("btn-announce").disabled = isFinal || over || !!g.announced;
     $("btn-announce").textContent = g.announced ? "✅ Answer announced" : "📣 Announce answer";
     const allPlayed = SONGS.every((_, j) => announcedSet.has(j));
-    $("btn-final").disabled = isFinal || over || !allPlayed;
+    $("btn-final").disabled = isFinal || over;
     $("final-hint").textContent = isFinal
-      ? "Final round is live."
-      : allPlayed ? "All songs played. Ready when you are!" : `Unlocks after all songs are announced (${announcedSet.size}/${SONGS.length}).`;
+      ? "Final round is live. Players are filling in their letters."
+      : allPlayed ? "All songs played. Ready when you are!" : `${announcedSet.size} of ${SONGS.length} songs announced so far.`;
 
     // Winner
     $("winner-banner").hidden = !over;
@@ -145,7 +145,9 @@
 
   $("btn-final").addEventListener("click", () => {
     const g = state.game;
-    if (!g || g.phase !== "songs" || !SONGS.every((_, j) => announcedSet.has(j))) return;
+    if (!g || g.phase !== "songs" || g.winner) return;
+    const left = SONGS.length - SONGS.filter((_, j) => announcedSet.has(j)).length;
+    if (left > 0 && !confirm(`${left} song${left === 1 ? " hasn't" : "s haven't"} been announced yet. Start the final round anyway? There's no going back to the songs.`)) return;
     db.update("game", { phase: "final", announced: null });
   });
 
