@@ -22,6 +22,17 @@
       <span class="label">Host booth</span>
     </header>
 
+    <section id="unlock" class="unlock" hidden>
+      <span class="label">Host only</span>
+      <p class="side-title">Unlock the songs</p>
+      <p class="muted">Type the host password once. This laptop remembers it.</p>
+      <form id="unlock-form" class="inline" autocomplete="off">
+        <input id="unlock-input" type="password" placeholder="Host password" aria-label="Host password" autocomplete="current-password">
+        <button class="btn btn-primary" type="submit">Unlock</button>
+      </form>
+      <p id="unlock-msg" class="msg"></p>
+    </section>
+
     <div class="host-grid">
       <main class="host-main">
         <section id="winner-banner" class="winner-banner" hidden>
@@ -93,6 +104,8 @@
   <script src="config.js"></script>
   <!-- Real titles and clip times. Local only (in .gitignore); the page still works without it. -->
   <script src="songs.private.js"></script>
+  <!-- Same list, encrypted with lock_songs.py: this is the copy that goes on GitHub. -->
+  <script src="songs.locked.js"></script>
   <script src="common.js"></script>
   <script src="host.js"></script>
 </body>

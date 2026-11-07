@@ -377,3 +377,12 @@ input:disabled { background: #fff; color: var(--ink-70); }
 .music-buttons .btn { height: 44px; font-size: .64rem; padding: 0 10px; }
 #music-status { margin-top: 10px; min-height: 1.4em; }
 #music-status a { color: var(--maj); text-decoration-color: var(--gold); text-underline-offset: 3px; }
+
+/* ── Host password unlock ──────────────────────── */
+.unlock { max-width: 460px; width: 100%; margin: 24px auto 0; padding: 20px; border: 1px solid var(--gold); background: #fff; text-align: left; }
+.unlock .side-title { margin-bottom: 4px; }
+input[type="password"] {
+  flex: 1; min-width: 0; height: 50px; font: inherit; font-size: 1rem; color: var(--ink);
+  padding: 0 14px; background: #fff; border: 1px solid var(--maj-45); border-radius: 2px; outline: none;
+}
+input[type="password"]:focus { border-color: var(--maj); outline: 1px solid var(--maj); }

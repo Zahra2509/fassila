@@ -12,9 +12,58 @@
     del(k) { try { localStorage.removeItem(k); } catch (e) {} },
   };
 
-  // Real titles, artists and clip times come from songs.private.js (local only), if it's there.
+  // Real titles, artists and clip times come from either:
+  //  - songs.private.js (readable, local only), or
+  //  - songs.locked.js (encrypted with lock_songs.py, safe on GitHub): unlocked with the host password.
+  const PASS_KEY = "fassila-host-password";
+  let songsUnlocked = false;
+  function applySongDetails(details) {
+    SONGS.forEach((s) => Object.assign(s, details[s.id] || {}));
+    songsUnlocked = true;
+  }
+
+  async function decryptSongs(locked, password) {
+    const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+    const key = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", hash: "SHA-256", salt: bytes(locked.salt), iterations: locked.iter },
+      base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(locked.iv) }, key, bytes(locked.data));
+    const source = new TextDecoder().decode(plain);
+    // The file was encrypted and authenticated with your password, so it's your own code.
+    return new Function(source + "\nreturn SONG_DETAILS;")();
+  }
+
+  async function tryUnlock(password, remember) {
+    let details;
+    try {
+      details = await decryptSongs(SONGS_LOCKED, password);
+    } catch (e) {
+      return false; // wrong password (or a damaged file)
+    }
+    applySongDetails(details);
+    if (remember) store.set(PASS_KEY, password);
+    $("unlock").hidden = true;
+    try { if (state.game) render(); } catch (e) { /* page still starting: it renders shortly */ }
+    return true;
+  }
+
   if (typeof SONG_DETAILS === "object" && SONG_DETAILS) {
-    SONGS.forEach((s) => Object.assign(s, SONG_DETAILS[s.id] || {}));
+    applySongDetails(SONG_DETAILS);
+  } else if (typeof SONGS_LOCKED === "object" && SONGS_LOCKED) {
+    const saved = store.get(PASS_KEY);
+    if (!(saved && (await tryUnlock(saved, false)))) {
+      if (saved) store.del(PASS_KEY); // password changed since last time
+      $("unlock").hidden = false;
+      $("unlock-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const ok = await tryUnlock($("unlock-input").value, true);
+        $("unlock-msg").textContent = ok ? "" : "That's not the password. Try again.";
+        $("unlock-msg").className = ok ? "msg" : "msg bad";
+        if (ok) $("unlock-input").value = "";
+      });
+      $("unlock-input").focus();
+    }
   }
   const ARABIC = /[؀-ۿ]/;
   const isArabic = (s) => s.lang === "ar" || ARABIC.test(s.title || "");
@@ -152,6 +201,7 @@
   $("btn-announce").addEventListener("click", () => {
     const g = state.game;
     if (!g || g.phase !== "songs" || g.announced) return;
+    if (!songsUnlocked && !confirm("The song list is still locked, so players would only see \"Song " + (g.currentSong + 1) + "\". Announce anyway?")) return;
     announcedSet.add(g.currentSong);
     saveAnnounced();
     db.set("game/announced", answerText(SONGS[g.currentSong]).slice(0, 200));

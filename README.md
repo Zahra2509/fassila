@@ -96,15 +96,15 @@ The host page can play each song's clips from YouTube's official embedded player
 - **Play clip / Play reveal / Stop** let you replay or cut it.
 - The music stops for the final round.
 
-The real titles, artists, video IDs and clip times live in **`songs.private.js`**. That file is in `.gitignore`, so it stays on your laptop and guests can't read the answers on GitHub. Set `lang: "ar"` for Arabic songs: their title and artist then show right-to-left in Arabic type, on the host screen and on players' phones when announced.
+The real titles, artists, video IDs and clip times live in **`songs.private.js`**. That file is in `.gitignore`, so the readable list stays on your laptop. Set `lang: "ar"` for Arabic songs: their title and artist then show right-to-left in Arabic type, on the host screen and on players' phones when announced.
 
-Because that file is local, **open the host page from your laptop folder**, not from GitHub Pages. Players still use the public GitHub Pages link, and both sides sync through Firebase:
+To put the songs online without giving away the answers, **lock** the list with a password:
 
 ```bash
-python -m http.server 8080
+python lock_songs.py
 ```
 
-Then open `http://localhost:8080/host.html`, and in **Join the party** paste the public player link once (`https://…github.io/fassila/play.html`) and press **Save**, so the QR code sends guests to the right place.
+This writes `songs.locked.js` (AES-256 encrypted), which is safe to publish. The host page asks for the password once and remembers it on that laptop. Run the script again, and push, whenever you change a song.
 
 The YouTube player shows the video, which gives away the answer. Keep the host screen to yourself rather than projecting it.
 
