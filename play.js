@@ -1,4 +1,4 @@
-// فاصيلة — player page
+// فاصلة — player page
 (async function () {
   "use strict";
   const F = window.Fassila;

@@ -1,4 +1,4 @@
-// فاصيلة — host page
+// فاصلة — host page
 (async function () {
   "use strict";
   const F = window.Fassila;
@@ -356,6 +356,8 @@
   const STAGE_VIEW_KEY = "fassila-stage-view";
   const stageChannel = "BroadcastChannel" in window ? new BroadcastChannel("fassila-stage") : null;
   let stageView = store.get(STAGE_VIEW_KEY) || "intro";
+  const DEMO_STEPS = ["Scan and pick a nickname", "Listen, then guess", "Be honest", "Final round", "Crack the code"];
+  let demoStep = 0;
 
   function stageState() {
     const g = state.game;
@@ -363,6 +365,7 @@
     return {
       type: "state",
       view: stageView,
+      demoStep,
       music: playing ? { kind: playing.kind, index: playing.index, token: playing.token } : null,
       reveal: g && g.announced && s ? {
         index: g.currentSong, title: s.title, artist: s.artist || "",
@@ -377,6 +380,10 @@
     $("btn-stage-intro").classList.toggle("btn-ghost", stageView !== "intro");
     $("btn-stage-game").classList.toggle("btn-primary", stageView === "game");
     $("btn-stage-game").classList.toggle("btn-ghost", stageView !== "game");
+    $("demo-controls").hidden = stageView !== "intro";
+    $("demo-now").textContent = `Step ${demoStep + 1} of ${DEMO_STEPS.length}: ${DEMO_STEPS[demoStep]}`;
+    $("btn-demo-prev").disabled = demoStep === 0;
+    $("btn-demo-next").disabled = demoStep === DEMO_STEPS.length - 1;
     $("stage-hint").textContent = stageView === "intro"
       ? "Showing How to play. It switches to the game when the first clip plays."
       : "Showing the game.";
@@ -387,9 +394,19 @@
     store.set(STAGE_VIEW_KEY, v);
     pushStage();
   }
-  if (stageChannel) stageChannel.onmessage = (e) => { if (e.data && e.data.type === "hello") pushStage(); };
+  function setDemoStep(step) {
+    demoStep = Math.max(0, Math.min(DEMO_STEPS.length - 1, step));
+    pushStage();
+  }
+  if (stageChannel) stageChannel.onmessage = (e) => {
+    const m = e.data || {};
+    if (m.type === "hello") pushStage();
+    if (m.type === "demo-step") setDemoStep(Number(m.step) || 0); // arrow keys / clicks on the stage
+  };
+  $("btn-demo-prev").addEventListener("click", () => setDemoStep(demoStep - 1));
+  $("btn-demo-next").addEventListener("click", () => setDemoStep(demoStep + 1));
   $("btn-open-stage").addEventListener("click", () => window.open("stage.html", "fassila-stage"));
-  $("btn-stage-intro").addEventListener("click", () => setStageView("intro"));
+  $("btn-stage-intro").addEventListener("click", () => { demoStep = 0; setStageView("intro"); pushStage(); });
   $("btn-stage-game").addEventListener("click", () => setStageView("game"));
   if (!stageChannel) $("stage-hint").textContent = "This browser can't link to the stage screen.";
 

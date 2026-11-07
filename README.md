@@ -1,4 +1,4 @@
-# فاصيلة (Fassila)
+# فاصلة (Fassila)
 
 A party guessing game. The host plays 10 songs. Players guess each one on their phones, and every correct song flips one of their CDs. In the final round they fill in the missing letters of the secret message. The first player to flip all 10 CDs wins.
 
@@ -112,7 +112,7 @@ The YouTube player shows the video, which gives away the answer. Keep the host s
 
 `stage.html` is a big-screen view for the room. On the host page, click **Open stage screen** and drag that window to the projector or TV (press F11 for full screen). It must run in the **same browser on the same laptop** as the host page, which drives it live:
 
-- **How to play:** an animated demo phone walks through the 5 steps, next to the QR code. Use it while you explain the rules. It uses dummy letters, never the real message.
+- **How to play:** a demo phone and the 5 steps, next to the QR code. You move through the steps while you explain: **Previous step / Next step** on the host page, or the arrow keys on the stage. It uses dummy letters, never the real message.
 - **Song playing:** a spinning CD and an equalizer move while your clip plays, plus the live number of guesses.
 - **Answer revealed:** the title and artist (Arabic right-to-left), with the YouTube video playing muted. The sound stays on the host laptop.
 - **Final round:** a live leaderboard.

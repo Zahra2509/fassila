@@ -1,4 +1,4 @@
-/* فاصيلة — Cercle 212 light register.
+/* فاصلة — Cercle 212 light register.
    Palette, type and ornament follow the Cercle 212 brand guide:
    two blues carry everything, gold is the only second ink, no gradients, shadows or emoji. */
 :root {
@@ -484,3 +484,7 @@ input[type="password"]:focus { border-color: var(--maj); outline: 1px solid var(
 .intro-join .qr-box { margin: 0; max-width: none; min-height: 0; padding: 8px; }
 .intro-join .qr-box img, .intro-join .qr-box canvas { width: 22vh; height: 22vh; }
 .intro-join .qr-url { text-align: center; font-size: clamp(.7rem, 1.6vh, 1rem); max-width: 26vh; }
+
+/* Manual "How to play" steps */
+.demo-now { font-family: var(--f-head); color: var(--shade); font-size: 1.05rem; margin: 12px 0 8px; }
+.steps li { cursor: pointer; }

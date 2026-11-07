@@ -1,4 +1,4 @@
-// فاصيلة — stage screen (projector).
+// فاصلة — stage screen (projector).
 // Game data comes from the database like every page. Music, the "how to play" slide and the
 // revealed song's video come from the host page in the same browser, over a BroadcastChannel.
 (async function () {
@@ -27,7 +27,10 @@
   if (channel) {
     channel.onmessage = (e) => {
       const m = e.data;
-      if (m && m.type === "state") { st.host = m; st.hostSeen = true; render(); }
+      if (m && m.type === "state") {
+        st.host = m; st.hostSeen = true; render();
+        if (demoActive && hostStep() !== demoStep) demoGo(hostStep());
+      }
     };
     channel.postMessage({ type: "hello" }); // ask the host for its current state
   }
@@ -187,7 +190,7 @@
   // ── "How to play" demo phone ────────────────────────────
   const DUMMY = ["ب", "ت", "س", "ق", "ل", "م", "ك", "ج", "ف", "ع"]; // never the real message letters
   const demoCds = F.buildCdRow($("demo-cds"));
-  let demoStep = 0, demoTimer = null;
+  let demoStep = 0;
   function demoReveal(indices) {
     demoCds.forEach((cd, i) => {
       const on = indices.includes(i);
@@ -206,15 +209,30 @@
     if (step === 3) { demoReveal([0, 2, 5, 7, 8]); demoCds[1].classList.add("selected"); }
     if (step === 4) demoReveal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   }
+  // The host moves through the steps (host page buttons, or arrow keys / clicks here).
+  let demoActive = false;
+  function hostStep() {
+    const n = Number(st.host.demoStep);
+    return Number.isInteger(n) && n >= 0 && n < 5 ? n : 0;
+  }
   function startDemo() {
-    if (demoTimer) return;
-    demoGo(0);
-    demoTimer = setInterval(() => demoGo((demoStep + 1) % 5), 5000);
+    demoActive = true;
+    demoGo(hostStep());
   }
   function stopDemo() {
-    clearInterval(demoTimer);
-    demoTimer = null;
+    demoActive = false;
   }
+  function askStep(step) {
+    step = Math.max(0, Math.min(4, step));
+    if (channel && st.hostSeen) channel.postMessage({ type: "demo-step", step }); // host decides and echoes back
+    else demoGo(step); // no host page in this browser: just move locally
+  }
+  document.addEventListener("keydown", (e) => {
+    if (!demoActive) return;
+    if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) { e.preventDefault(); askStep(demoStep + 1); }
+    if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { e.preventDefault(); askStep(demoStep - 1); }
+  });
+  document.querySelectorAll("#steps li").forEach((li, i) => li.addEventListener("click", () => askStep(i)));
 
   // ── QR code (same saved link as the host page) ──────────
   (async function drawQr() {

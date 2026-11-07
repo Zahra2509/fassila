@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-//  فاصيلة (Fassila) — game config. This is the only file you edit.
+//  فاصلة (Fassila) — game config. This is the only file you edit.
 // ─────────────────────────────────────────────────────────────
 
 // The secret message. Spaces split it into words (shown with a gap).
