@@ -3,71 +3,80 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1E4FA3">
+  <meta name="theme-color" content="#1E33CC">
   <title>فاصيلة · Host</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Marcellus&family=Karla:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="page-host">
   <div id="mode-banner" class="mode-banner" hidden></div>
 
-  <header class="topbar">
-    <h1 class="logo"><span lang="ar" dir="rtl">فاصيلة</span><small>Host booth</small></h1>
-    <span class="who">🎛️ Host</span>
-  </header>
+  <div class="frame">
+    <header class="brandhead">
+      <div class="wordmark">Cercle 212</div>
+      <img class="mark" src="assets/logo.svg" alt="" onerror="this.remove()">
+      <h1 class="title-ar" lang="ar" dir="rtl">فاصيلة</h1>
+      <span class="label">Host booth</span>
+    </header>
 
-  <div class="host-wrap">
-    <main class="host-main">
-      <section id="winner-banner" class="card winner-banner" hidden>
-        <p class="eyebrow">We have a winner</p>
-        <h2 id="winner-name"></h2>
-      </section>
+    <div class="host-grid">
+      <main class="host-main">
+        <section id="winner-banner" class="winner-banner" hidden>
+          <span class="label">We have a winner</span>
+          <h2 id="winner-name"></h2>
+        </section>
 
-      <section class="card now-playing">
-        <p class="eyebrow" id="phase-label">Now playing</p>
-        <div class="big-song" id="big-song">Song 1 of 10</div>
-        <div class="secret-title" id="secret-title">…</div>
-        <p class="secret-note" id="secret-note">🤫 Only you can see this. Flips CD <span id="cd-num"></span>.</p>
-        <div class="host-stats">
-          <span class="stat" id="stat-guesses"><b>0</b> guesses in</span>
-          <span class="stat" id="stat-announced">Not announced yet</span>
-          <span class="stat" id="stat-claims" hidden><b>0</b> got it</span>
-        </div>
-        <div class="song-dots" id="song-dots" aria-label="Songs announced so far"></div>
-      </section>
+        <section class="now-playing">
+          <span class="label" id="phase-label">Now playing</span>
+          <div class="big-song" id="big-song">Song 1 of 10</div>
+          <div class="token secret-title" id="secret-title">…</div>
+          <p class="secret-note" id="secret-note">Only you can see this. It flips CD <span id="cd-num"></span>.</p>
 
-      <section class="card controls">
-        <div class="btn-row">
-          <button id="btn-prev" class="btn btn-ghost" type="button">← Previous song</button>
-          <button id="btn-next" class="btn btn-ghost" type="button">Next song →</button>
-        </div>
-        <button id="btn-announce" class="btn btn-primary" type="button">📣 Announce answer</button>
-        <button id="btn-final" class="btn btn-primary" type="button">🔤 Start final round</button>
-        <p class="hint" id="final-hint"></p>
-        <button id="btn-reset" class="btn btn-danger" type="button">Reset game</button>
-      </section>
-    </main>
+          <div class="details" id="details">
+            <div><span class="label">Guesses</span><span class="value" id="stat-guesses">0</span></div>
+            <div><span class="label">Answer</span><span class="value" id="stat-announced">Hidden</span></div>
+            <div><span class="label">Got it</span><span class="value" id="stat-claims">–</span></div>
+          </div>
 
-    <aside class="host-side">
-      <section class="card">
-        <h2>Live progress</h2>
-        <p class="muted" id="player-count" style="margin-top:-4px">No players yet</p>
-        <ul class="board-list" id="board-list"></ul>
-      </section>
+          <div class="song-dots" id="song-dots" aria-label="Songs announced so far"></div>
+        </section>
 
-      <section class="card">
-        <h2>Join the party</h2>
-        <p class="muted" style="margin-top:-4px">Scan to play on your phone.</p>
-        <div class="qr-box" id="qr-box"></div>
-        <div class="qr-url" id="qr-url"></div>
-        <form class="qr-form" id="qr-form" autocomplete="off">
-          <input id="qr-input" type="text" placeholder="https://your-site/play.html" aria-label="Public player URL">
-          <button class="btn btn-ghost" type="submit">Save</button>
-        </form>
-      </section>
-    </aside>
+        <section class="controls">
+          <div class="btn-row">
+            <button id="btn-prev" class="btn btn-ghost" type="button">Previous song</button>
+            <button id="btn-next" class="btn btn-ghost" type="button">Next song</button>
+          </div>
+          <button id="btn-announce" class="btn btn-primary" type="button">Announce answer</button>
+          <button id="btn-final" class="btn btn-primary" type="button">Start final round</button>
+          <p class="hint" id="final-hint"></p>
+          <button id="btn-reset" class="btn btn-quiet" type="button">Reset game</button>
+        </section>
+      </main>
+
+      <aside class="host-side">
+        <section class="side-block">
+          <span class="label">Live progress</span>
+          <p class="side-title" id="player-count">No players yet</p>
+          <ul class="board-list" id="board-list"></ul>
+        </section>
+
+        <section class="side-block">
+          <span class="label">Join the party</span>
+          <p class="side-title">Scan to play</p>
+          <div class="qr-box" id="qr-box"></div>
+          <div class="qr-url" id="qr-url"></div>
+          <form class="qr-form" id="qr-form" autocomplete="off">
+            <input id="qr-input" type="text" placeholder="https://your-site/play.html" aria-label="Public player URL">
+            <button class="btn btn-ghost" type="submit">Save</button>
+          </form>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="foot">Guess <i></i> Flip <i></i> Crack the code</footer>
   </div>
 
   <script src="config.js"></script>

@@ -72,19 +72,16 @@
 
     $("phase-label").textContent = isFinal ? "Final round" : "Now playing";
     $("big-song").textContent = isFinal ? "Final round!" : `Song ${i + 1} of ${SONGS.length}`;
-    $("secret-title").textContent = isFinal ? "Players are filling in the blanks ✍️" : song.title;
+    $("secret-title").textContent = isFinal ? "Players are filling in the blanks" : song.title;
     $("secret-note").hidden = isFinal;
     $("cd-num").textContent = `${song.letterIndex + 1} (${F.LETTERS[song.letterIndex]})`;
 
     const guessCount = Object.keys(state.guesses).length;
     const gotCount = Object.values(state.claims).filter((v) => v === true).length;
-    $("stat-guesses").innerHTML = `<b>${guessCount}</b> guess${guessCount === 1 ? "" : "es"} in`;
-    $("stat-guesses").hidden = isFinal;
-    $("stat-announced").textContent = g.announced ? "Answer announced ✅" : "Not announced yet";
-    $("stat-announced").classList.toggle("on", !!g.announced);
-    $("stat-announced").hidden = isFinal;
-    $("stat-claims").hidden = isFinal || !g.announced;
-    $("stat-claims").innerHTML = `<b>${gotCount}</b> got it`;
+    $("details").hidden = isFinal;
+    $("stat-guesses").textContent = guessCount;
+    $("stat-announced").textContent = g.announced ? "Out" : "Hidden";
+    $("stat-claims").textContent = g.announced ? gotCount : "–";
 
     $("song-dots").innerHTML = SONGS.map((s, j) => {
       const cls = ["song-dot", announcedSet.has(j) ? "played" : "", !isFinal && j === i ? "current" : ""].join(" ");
@@ -95,7 +92,7 @@
     $("btn-prev").disabled = isFinal || over || i <= 0;
     $("btn-next").disabled = isFinal || over || i >= SONGS.length - 1;
     $("btn-announce").disabled = isFinal || over || !!g.announced;
-    $("btn-announce").textContent = g.announced ? "✅ Answer announced" : "📣 Announce answer";
+    $("btn-announce").textContent = g.announced ? "Answer announced" : "Announce answer";
     const allPlayed = SONGS.every((_, j) => announcedSet.has(j));
     $("btn-final").disabled = isFinal || over;
     $("final-hint").textContent = isFinal
@@ -105,7 +102,7 @@
     // Winner
     $("winner-banner").hidden = !over;
     if (over) {
-      $("winner-name").textContent = `🏆 ${g.winner} cracked the code!`;
+      $("winner-name").textContent = `${g.winner} cracked the code!`;
       if (celebratedWinner !== g.winner) { celebratedWinner = g.winner; F.bigConfetti(); }
     } else {
       celebratedWinner = null;
@@ -117,10 +114,11 @@
   function renderBoard(winner) {
     const rows = Object.entries(state.players).map(([nick, p]) => ({ nick, count: F.revealedSet(p).size }));
     rows.sort((a, b) => b.count - a.count || a.nick.localeCompare(b.nick));
-    $("player-count").textContent = rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : "No players yet. Show them the QR!";
-    $("board-list").innerHTML = rows.map((r, k) => `
+    $("player-count").textContent = rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : "No players yet";
+    $("board-list").innerHTML = rows.length ? "" : '<li class="empty" style="display:block">Show them the QR code below.</li>';
+    $("board-list").innerHTML += rows.map((r, k) => `
       <li class="${r.nick === winner ? "win" : ""}">
-        <span class="rank">${r.nick === winner ? "🏆" : k + 1}</span>
+        <span class="rank">${r.nick === winner ? "WIN" : String(k + 1).padStart(2, "0")}</span>
         <span class="name">${F.escapeHtml(r.nick)}</span>
         <span class="score">${r.count}/${F.TOTAL}</span>
         <span class="bar"><span style="width:${(r.count / F.TOTAL) * 100}%"></span></span>
@@ -197,7 +195,7 @@
       if (!qrLib) qrLib = F.loadScript("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js");
       await qrLib;
       box.innerHTML = "";
-      new QRCode(box, { text: url, width: 240, height: 240, colorDark: "#1E4FA3", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+      new QRCode(box, { text: url, width: 240, height: 240, colorDark: "#101C7A", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
     } catch (e) {
       qrLib = null; // allow a fresh attempt
       if (attempt < 4) {

@@ -30,7 +30,7 @@
   let me = F.sanitizeNick(store.get(NICK_KEY));
   if (!me) me = await askNickname();
   $("loading").hidden = true;
-  $("who").textContent = "🎧 " + me;
+  $("who").textContent = "Playing as " + me;
   $("who").hidden = false;
   $("game").hidden = false;
 
@@ -141,7 +141,7 @@
     if (g.winner) {
       setSelected(null);
       if (g.winner === me) {
-        $("status").textContent = "You cracked it! 🏆";
+        $("status").textContent = "You cracked it.";
         $("winner-title").textContent = `${me} cracked the code!`;
         $("winner-message").textContent = MESSAGE;
         $("over-title").textContent = `${me} cracked the code!`;
@@ -174,12 +174,12 @@
     if (g.announced) {
       show("panel-claim");
       $("answer-title").textContent = g.announced;
-      $("claim-guess").textContent = state.myGuess || "nothing 🤐";
+      $("claim-guess").textContent = state.myGuess || "nothing";
       const msg = $("claim-msg");
       const buttons = $("claim-buttons");
       if (state.claim === true) {
         buttons.hidden = true;
-        setMsg(msg, revealed.has(song.letterIndex) ? "Nailed it! CD flipped 💿" : "Nailed it!", "good", false);
+        setMsg(msg, revealed.has(song.letterIndex) ? "Nailed it. Your CD flipped." : "Nailed it!", "good", false);
         $("status").textContent = "Nice ear! Wait for the next song.";
       } else if (state.claim === false) {
         buttons.hidden = true;
@@ -195,7 +195,7 @@
       } else {
         buttons.hidden = false;
         $("btn-got").disabled = $("btn-not").disabled = false;
-        if (!msg.classList.contains("bad")) setMsg(msg, "Be honest… 👀", "", false);
+        if (!msg.classList.contains("bad")) setMsg(msg, "Be honest…", "", false);
         $("status").textContent = "Answer's out! Did you get it?";
       }
       return;
@@ -208,7 +208,7 @@
       form.hidden = true;
       $("guess-locked").hidden = false;
       $("guess-locked-text").textContent = state.myGuess;
-      $("status").textContent = "Guess locked in. Fingers crossed 🤞";
+      $("status").textContent = "Guess locked in. Fingers crossed.";
     } else {
       form.hidden = false;
       $("guess-locked").hidden = true;
@@ -279,7 +279,7 @@
       return false;
     }
     await db.push("guesses/" + song.id, { nickname: me, guess: text.slice(0, 100), time: now });
-    setMsg(msg, "Locked in! 🔒", "good");
+    setMsg(msg, "Locked in!", "good");
     return true;
   }
 
@@ -318,7 +318,7 @@
 
     if (guess === F.normalizeLetter(F.LETTERS[index])) {
       await db.set(`players/${me}/revealed/${index}`, true);
-      setMsg(msg, "Yes! 💿", "good");
+      setMsg(msg, "Yes! That's the one.", "good");
       return true;
     }
     letterLockUntil = Date.now() + LETTER_COOLDOWN_MS;

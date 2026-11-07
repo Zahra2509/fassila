@@ -3,98 +3,109 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1E4FA3">
+  <meta name="theme-color" content="#1E33CC">
   <title>فاصيلة · Play</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Marcellus&family=Karla:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="page-play">
   <div id="mode-banner" class="mode-banner" hidden></div>
 
-  <header class="topbar">
-    <h1 class="logo" lang="ar" dir="rtl">فاصيلة</h1>
-    <span id="who" class="who" hidden></span>
-  </header>
+  <div class="frame">
+    <header class="brandhead">
+      <div class="wordmark">Cercle 212</div>
+      <img class="mark" src="assets/logo.svg" alt="" onerror="this.remove()">
+      <h1 class="title-ar" lang="ar" dir="rtl">فاصيلة</h1>
+      <span id="who" class="label" hidden></span>
+    </header>
 
-  <main class="wrap">
-    <p id="loading" class="muted" style="text-align:center">Warming up the speakers…</p>
+    <main class="wrap">
+      <p id="loading" class="muted" style="text-align:center; margin-top:28px">Warming up the speakers…</p>
 
-    <!-- Nickname -->
-    <section id="join" class="card" hidden>
-      <h2>Who's playing?</h2>
-      <p class="muted">Pick a nickname. Short and silly works best.</p>
-      <form id="join-form" class="inline" autocomplete="off">
-        <input id="nick-input" type="text" maxlength="16" placeholder="Your nickname" aria-label="Nickname" required>
-        <button class="btn btn-primary" type="submit">Let's go!</button>
-      </form>
-      <p id="join-msg" class="msg"></p>
-    </section>
-
-    <!-- Game -->
-    <section id="game" hidden>
-      <div class="card board">
-        <div id="cd-row"></div>
-        <div id="song-label" class="song-label">Song 1 of 10</div>
-        <div id="status" class="status"></div>
-        <div id="count" class="count-pill">0 / 10 CDs</div>
-      </div>
-
-      <div id="panel-wait" class="card panel" hidden style="margin-top:14px">
-        <p class="eyebrow">Hang tight</p>
-        <p style="margin:0">Waiting for the host to drop the first beat…</p>
-      </div>
-
-      <!-- Song phase: guess -->
-      <div id="panel-guess" class="card panel" hidden style="margin-top:14px">
-        <p class="eyebrow">What's this song?</p>
-        <form id="guess-form" class="inline" autocomplete="off">
-          <input id="guess-input" type="text" maxlength="100" placeholder="Type your guess..." aria-label="Your guess">
-          <button class="btn btn-primary" type="submit">Guess!</button>
+      <!-- Nickname -->
+      <section id="join" class="panel" hidden>
+        <span class="label">Who's playing?</span>
+        <p class="join-title">Pick a nickname</p>
+        <p class="muted">Short and silly works best.</p>
+        <form id="join-form" class="inline" autocomplete="off">
+          <input id="nick-input" type="text" maxlength="16" placeholder="Your nickname" aria-label="Nickname" required>
+          <button class="btn btn-primary" type="submit">Let's go</button>
         </form>
-        <div id="guess-locked" class="locked" hidden>Your guess: <strong id="guess-locked-text"></strong></div>
-        <p id="guess-msg" class="msg"></p>
-      </div>
+        <p id="join-msg" class="msg"></p>
+      </section>
 
-      <!-- Song phase: after the answer is announced -->
-      <div id="panel-claim" class="card panel" hidden style="margin-top:14px">
-        <p class="eyebrow">The answer was…</p>
-        <p id="answer-title" class="answer"></p>
-        <p class="your-guess">You said: <strong id="claim-guess"></strong></p>
-        <div id="claim-buttons" class="btn-row">
-          <button id="btn-got" class="btn btn-primary" type="button">🎵 I got it!</button>
-          <button id="btn-not" class="btn btn-ghost" type="button">❌ Not me</button>
+      <!-- Game -->
+      <section id="game" hidden>
+        <div class="board">
+          <div id="cd-row"></div>
+          <div id="song-label" class="song-label">Song 1 of 10</div>
+          <div id="status" class="status"></div>
+          <span id="count" class="token">0 / 10</span>
         </div>
-        <p id="claim-msg" class="msg"></p>
-      </div>
 
-      <!-- Final round -->
-      <div id="panel-final" class="card panel" hidden style="margin-top:14px">
-        <p class="eyebrow">Final round</p>
-        <p>Tap a mystery CD, then guess its letter. <span id="final-target" class="final-target"></span></p>
-        <form id="letter-form" class="inline" autocomplete="off">
-          <input id="letter-input" class="letter-input" type="text" maxlength="2" dir="rtl" lang="ar" placeholder="؟" aria-label="Letter">
-          <button class="btn btn-primary" type="submit">Fill the blank!</button>
-        </form>
-        <p id="letter-msg" class="msg"></p>
-      </div>
+        <div id="panel-wait" class="panel center" hidden>
+          <span class="label">Hang tight</span>
+          <p style="margin:0">Waiting for the host to drop the first beat…</p>
+        </div>
 
-      <!-- Somebody else won -->
-      <div id="panel-over" class="card panel" hidden style="margin-top:14px; text-align:center">
-        <p class="eyebrow">Game over</p>
-        <h2 id="over-title"></h2>
-        <p class="winner-message" lang="ar" dir="rtl" id="over-message"></p>
-        <p class="muted" style="margin:0">Better luck next party! 🎶</p>
-      </div>
-    </section>
-  </main>
+        <!-- Song phase: guess -->
+        <div id="panel-guess" class="panel" hidden>
+          <span class="label">What's this song?</span>
+          <form id="guess-form" class="inline" autocomplete="off">
+            <input id="guess-input" type="text" maxlength="100" placeholder="Type your guess..." aria-label="Your guess">
+            <button class="btn btn-primary" type="submit">Guess!</button>
+          </form>
+          <div id="guess-locked" class="locked" hidden>Your guess: <strong id="guess-locked-text"></strong></div>
+          <p id="guess-msg" class="msg"></p>
+        </div>
+
+        <!-- Song phase: after the answer is announced -->
+        <div id="panel-claim" class="panel" hidden>
+          <span class="label">The answer was</span>
+          <p id="answer-title" class="answer"></p>
+          <p class="your-guess">You said: <strong id="claim-guess"></strong></p>
+          <div id="claim-buttons" class="btn-row">
+            <button id="btn-got" class="btn btn-primary" type="button">I got it!</button>
+            <button id="btn-not" class="btn btn-ghost" type="button">Not me</button>
+          </div>
+          <p id="claim-msg" class="msg"></p>
+        </div>
+
+        <!-- Final round -->
+        <div id="panel-final" class="panel" hidden>
+          <span class="label">Final round</span>
+          <p>Tap a hidden CD, then guess its letter. <span id="final-target" class="final-target"></span></p>
+          <form id="letter-form" class="inline" autocomplete="off">
+            <input id="letter-input" class="letter-input" type="text" maxlength="2" dir="rtl" lang="ar" placeholder="؟" aria-label="Letter">
+            <button class="btn btn-primary" type="submit">Fill the blank!</button>
+          </form>
+          <p id="letter-msg" class="msg"></p>
+        </div>
+
+        <!-- Somebody else won -->
+        <div id="panel-over" class="panel center" hidden>
+          <span class="label">Game over</span>
+          <h2 id="over-title" class="head" style="font-size:1.7rem"></h2>
+          <div class="rule"><i></i></div>
+          <p class="winner-message" lang="ar" dir="rtl" id="over-message"></p>
+          <p class="muted" style="margin:0">Better luck next party.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">Guess <i></i> Flip <i></i> Crack the code</footer>
+  </div>
 
   <!-- You won -->
   <div id="winner" class="winner" hidden>
     <div class="winner-card">
-      <div class="trophy">🏆</div>
+      <img class="mark" src="assets/logo.svg" alt="" onerror="this.remove()">
+      <span class="label">Winner</span>
       <h2 id="winner-title"></h2>
+      <div class="rule"><i></i></div>
       <p class="winner-message" lang="ar" dir="rtl" id="winner-message"></p>
       <button id="winner-close" class="btn btn-ghost" type="button">Admire my CDs</button>
     </div>

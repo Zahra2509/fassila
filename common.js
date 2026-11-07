@@ -277,7 +277,7 @@
       el.hidden = false;
       return;
     }
-    const normal = db.mode === "lan" ? "📶 Wi-Fi test mode: everything syncs through the laptop. Set up Firebase before the party." : "";
+    const normal = db.mode === "lan" ? "Wi-Fi test mode · synced through the laptop · set up Firebase before the party" : "";
     const lost = db.mode === "lan" ? "Can't reach the laptop. Reconnecting…" : "Reconnecting…";
     const paint = (text) => { el.textContent = text; el.hidden = !text; };
     paint(normal);
@@ -367,7 +367,7 @@
   }
 
   // ── Confetti (tiny, dependency-free) ─────────────────────────
-  const COLORS = ["#1E4FA3", "#3B73D9", "#8DB8FF", "#FFC845", "#FF6B8B", "#4FD1A5"];
+  const COLORS = ["#1E33CC", "#1E33CC", "#101C7A", "#C9A24A"];
   let canvas, ctx, particles = [], running = false;
   const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
