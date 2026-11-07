@@ -1,0 +1,51 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "game": {
+      ".read": true,
+      ".write": true,
+      "currentSong": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9" },
+      "phase": { ".validate": "newData.val() === 'songs' || newData.val() === 'final'" },
+      "announced": { ".validate": "newData.isString() && newData.val().length <= 200" },
+      "winner": { ".validate": "newData.isString() && newData.val().length <= 20 && (!data.exists() || data.val() === newData.val())" },
+      "$other": { ".validate": false }
+    },
+
+    "players": {
+      ".read": true,
+      ".write": true,
+      "$nickname": {
+        ".validate": "$nickname.length <= 20",
+        "revealed": {
+          "$letterIndex": { ".validate": "$letterIndex.matches(/^[0-9]$/) && newData.val() === true && !data.exists()" }
+        },
+        "finished": { ".validate": "newData.isBoolean()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "guesses": {
+      ".read": true,
+      ".write": true,
+      "$songId": {
+        "$pushId": {
+          ".validate": "newData.hasChildren(['nickname', 'guess', 'time']) && !data.exists()",
+          "nickname": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "guess": { ".validate": "newData.isString() && newData.val().length <= 100" },
+          "time": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "claims": {
+      ".read": true,
+      ".write": true,
+      "$songId": {
+        "$nickname": { ".validate": "newData.isBoolean() && !data.exists()" }
+      }
+    }
+  }
+}
