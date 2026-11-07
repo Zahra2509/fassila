@@ -29,11 +29,11 @@ const SONGS = [
 // While this still holds the placeholders, the game runs in local DEMO MODE: it only
 // syncs between tabs in the same browser, which is handy for trying it out.
 const FIREBASE_CONFIG = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "YOUR-PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR-PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR-PROJECT",
-  storageBucket: "YOUR-PROJECT.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "PASTE_YOUR_APP_ID",
+  apiKey: "AIzaSyCTrwX9D5YINabG4JHyUUq2sQdU6lENIRI",
+  authDomain: "fassila-mor.firebaseapp.com",
+  databaseURL: "https://fassila-mor-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "fassila-mor",
+  storageBucket: "fassila-mor.firebasestorage.app",
+  messagingSenderId: "272755859567",
+  appId: "1:272755859567:web:ecdf0ef14a9778dd1f2d9a",
 };
