@@ -196,8 +196,8 @@
   // ── Controls ────────────────────────────────────────────
   function goTo(i) {
     if (!state.game || i < 0 || i >= SONGS.length) return;
+    playClip(i, "guess"); // new song: play its guessing clip (first, so the redraw below doesn't cue it paused)
     db.update("game", { currentSong: i, announced: null });
-    playClip(i, "guess"); // new song: play its guessing clip
   }
   $("btn-prev").addEventListener("click", () => goTo(state.game.currentSong - 1));
   $("btn-next").addEventListener("click", () => goTo(state.game.currentSong + 1));
@@ -292,6 +292,9 @@
       return;
     }
     const [start, end] = range;
+    // Claim the player for this song right away, before any await, so the page redraw
+    // triggered by changing song doesn't load it "paused" over our play request.
+    loadedId = s.youtube;
     try {
       await ensurePlayer(s.youtube);
     } catch (e) {
