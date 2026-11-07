@@ -80,6 +80,18 @@
 
       <aside class="host-side">
         <section class="side-block">
+          <span class="label">Stage screen</span>
+          <p class="side-title">For the projector</p>
+          <p class="muted" style="font-size:.9rem">Open it on this laptop and drag the window to the projector. It follows this page.</p>
+          <button id="btn-open-stage" class="btn btn-ghost" type="button" style="width:100%">Open stage screen</button>
+          <div class="btn-row" style="margin-top:8px">
+            <button id="btn-stage-intro" class="btn btn-ghost" type="button">How to play</button>
+            <button id="btn-stage-game" class="btn btn-ghost" type="button">Show the game</button>
+          </div>
+          <p class="hint" id="stage-hint" style="margin-top:8px"></p>
+        </section>
+
+        <section class="side-block">
           <span class="label">Live progress</span>
           <p class="side-title" id="player-count">No players yet</p>
           <ul class="board-list" id="board-list"></ul>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1E33CC">
+  <title>فاصيلة · Stage</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Marcellus&family=Karla:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page-stage">
+  <div id="mode-banner" class="mode-banner" hidden></div>
+
+  <div class="frame stage-frame">
+    <header class="stage-head">
+      <div class="wordmark">Cercle 212</div>
+      <div class="stage-brand">
+        <img class="mark" src="assets/logo.svg" alt="" onerror="this.remove()">
+        <h1 class="title-ar" lang="ar" dir="rtl">فاصيلة</h1>
+      </div>
+    </header>
+
+    <main class="stage-main">
+      <!-- Waiting -->
+      <section id="v-wait" class="view center" hidden>
+        <span class="label">Get ready</span>
+        <div class="stage-big">The party starts soon</div>
+      </section>
+
+      <!-- How to play -->
+      <section id="v-intro" class="view intro" hidden>
+        <div class="intro-phone">
+          <div class="phone" id="demo-phone" data-state="0">
+            <div class="phone-screen">
+              <div class="ph-logo" lang="ar" dir="rtl">فاصيلة</div>
+              <div class="ph-cds"><div id="demo-cds"></div></div>
+              <div class="ph-song" id="demo-song">Song 1 of 10</div>
+              <div class="ph s0">
+                <span class="label">Who's playing?</span>
+                <div class="ph-input">Yasmine<i class="caret"></i></div>
+                <div class="ph-btn">Let's go</div>
+              </div>
+              <div class="ph s1">
+                <span class="label">What's this song?</span>
+                <div class="ph-input">Hmm… I know this one<i class="caret"></i></div>
+                <div class="ph-btn">Guess!</div>
+              </div>
+              <div class="ph s2">
+                <span class="label">The answer was</span>
+                <div class="ph-answer">The song title</div>
+                <div class="ph-row"><div class="ph-btn">I got it!</div><div class="ph-btn ghost">Not me</div></div>
+              </div>
+              <div class="ph s3">
+                <span class="label">Final round</span>
+                <div class="ph-row"><div class="ph-input letter" lang="ar">؟</div><div class="ph-btn">Fill the blank!</div></div>
+              </div>
+              <div class="ph s4">
+                <span class="label">Winner</span>
+                <div class="ph-answer">You cracked the code!</div>
+              </div>
+            </div>
+          </div>
+          <span class="label demo-tag">Demo</span>
+        </div>
+
+        <div class="intro-text">
+          <span class="label">How to play</span>
+          <h2 class="stage-title">Guess the song. Flip the CD. Crack the code.</h2>
+          <ol class="steps" id="steps">
+            <li><span class="num">01</span><div><b>Scan and pick a nickname</b><p>Your phone shows your own row of 10 hidden CDs.</p></div></li>
+            <li><span class="num">02</span><div><b>Listen, then guess</b><p>A few seconds of a song. Type the title: one guess per song.</p></div></li>
+            <li><span class="num">03</span><div><b>Be honest</b><p>When the answer is out, tap "I got it!" if you were right. One of your CDs flips.</p></div></li>
+            <li><span class="num">04</span><div><b>Final round</b><p>Tap a hidden CD and guess its letter. Right letters flip too.</p></div></li>
+            <li><span class="num">05</span><div><b>Crack the code</b><p>Flip all 10 CDs to reveal the secret message and win.</p></div></li>
+          </ol>
+        </div>
+
+        <div class="intro-join">
+          <span class="label">Join now</span>
+          <div class="qr-box" id="qr-box"></div>
+          <p class="qr-url" id="qr-url"></p>
+        </div>
+      </section>
+
+      <!-- Song playing / guessing -->
+      <section id="v-song" class="view center" hidden>
+        <span class="label">Now playing</span>
+        <div class="stage-big" id="song-num">Song 1 of 10</div>
+        <div class="listen" id="listen">
+          <div class="disc"><span></span></div>
+          <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <p class="stage-status" id="song-status">Listen closely…</p>
+        <span class="token stage-token" id="guess-count">0 guesses in</span>
+      </section>
+
+      <!-- Answer revealed -->
+      <section id="v-reveal" class="view center" hidden>
+        <span class="label">The answer</span>
+        <h2 class="reveal-title" id="reveal-title"></h2>
+        <p class="reveal-artist" id="reveal-artist"></p>
+        <div class="yt-frame stage-yt" id="stage-yt-wrap" hidden><div id="stage-yt"></div></div>
+        <span class="token stage-token" id="got-count"></span>
+      </section>
+
+      <!-- Final round -->
+      <section id="v-final" class="view center" hidden>
+        <span class="label">Final round</span>
+        <div class="stage-big">Fill in the blanks</div>
+        <p class="stage-status">Tap a hidden CD on your phone and guess its letter.</p>
+        <ul class="board-list stage-board" id="final-board"></ul>
+      </section>
+
+      <!-- Winners -->
+      <section id="v-win" class="view center" hidden>
+        <span class="label" id="win-label">Winner</span>
+        <h2 class="win-names" id="win-names"></h2>
+        <div class="rule"><i></i></div>
+        <p class="winner-message stage-message" lang="ar" dir="rtl" id="win-message"></p>
+      </section>
+    </main>
+
+    <footer class="stage-foot">
+      <div class="song-dots" id="dots"></div>
+      <span class="label" id="player-count"></span>
+    </footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="common.js"></script>
+  <script src="stage.js"></script>
+</body>
+</html>

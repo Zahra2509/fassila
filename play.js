@@ -58,6 +58,7 @@
   const state = {
     game: undefined,   // undefined = not loaded yet, null = host hasn't started
     player: undefined,
+    all: {},            // every player, to name all the winners
     myGuess: undefined, // string, or null if no guess yet for the current song
     claim: undefined,   // true / false / null for the current song
     songKey: null,
@@ -109,6 +110,8 @@
     render();
   });
 
+  db.on("players", (all) => { state.all = all || {}; render(); });
+
   // ── Rendering ───────────────────────────────────────────
   function render() {
     const g = state.game;
@@ -137,30 +140,32 @@
     $("song-label").textContent = isFinal ? "Final round!" : `Song ${g.currentSong + 1} of ${SONGS.length}`;
     document.querySelectorAll(".cd").forEach((cd) => cd.classList.toggle("selectable", isFinal && !g.winner && !cd.classList.contains("revealed")));
 
-    // Game over
-    if (g.winner) {
+    // Game over: everyone who completes all 10 CDs wins. During the songs, players who
+    // haven't claimed the current song yet can still claim it, so ties share the win.
+    const iWon = count >= F.TOTAL;
+    const canStillClaim = g.winner && !iWon && g.phase === "songs" && g.announced &&
+      typeof state.myGuess === "string" && (state.claim === null || state.claim === undefined);
+    if (g.winner && !canStillClaim) {
       setSelected(null);
-      if (g.winner === me) {
+      const winners = F.winnersOf(g, state.all);
+      const headline = `${F.joinNames(winners)} cracked the code!`;
+      $("over-title").textContent = headline;
+      $("over-message").textContent = MESSAGE;
+      show("panel-over");
+      if (iWon) {
         $("status").textContent = "You cracked it.";
-        $("winner-title").textContent = `${me} cracked the code!`;
+        $("winner-title").textContent = headline;
         $("winner-message").textContent = MESSAGE;
-        $("over-title").textContent = `${me} cracked the code!`;
-        $("over-message").textContent = MESSAGE;
-        show("panel-over");
         if (!winnerDismissed) $("winner").hidden = false;
         if (!celebrated) { celebrated = true; F.bigConfetti(); }
       } else {
         $("status").textContent = "Game over!";
-        $("over-title").textContent = `${g.winner} cracked the code!`;
-        $("over-message").textContent = MESSAGE;
-        show("panel-over");
         $("winner").hidden = true;
       }
       return;
     }
     $("winner").hidden = true;
-    celebrated = false;
-    winnerDismissed = false;
+    if (!g.winner) { celebrated = false; winnerDismissed = false; }
 
     if (isFinal) {
       show("panel-final");
@@ -288,7 +293,7 @@
 
   async function claim(got) {
     const g = state.game;
-    if (!g || g.phase !== "songs" || !g.announced || g.winner) return;
+    if (!g || g.phase !== "songs" || !g.announced) return; // still allowed after a winner: ties share the win
     if (state.claim === true || state.claim === false) return;
     if (got && typeof state.myGuess !== "string") return;
     const song = SONGS[g.currentSong];

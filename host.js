@@ -166,23 +166,27 @@
     // Winner
     $("winner-banner").hidden = !over;
     if (over) {
-      $("winner-name").textContent = `${g.winner} cracked the code!`;
-      if (celebratedWinner !== g.winner) { celebratedWinner = g.winner; F.bigConfetti(); }
+      const winners = F.winnersOf(g, state.players);
+      $("winner-name").textContent = `${F.joinNames(winners)} cracked the code!`;
+      $("winner-banner").querySelector(".label").textContent = winners.length > 1 ? "We have winners" : "We have a winner";
+      if (celebratedWinner !== winners.join("|")) { celebratedWinner = winners.join("|"); F.bigConfetti(); }
     } else {
       celebratedWinner = null;
     }
 
-    renderBoard(g.winner);
+    renderBoard(F.winnersOf(g, state.players));
+    pushStage();
   }
 
-  function renderBoard(winner) {
+  function renderBoard(winners) {
+    const won = new Set(winners);
     const rows = Object.entries(state.players).map(([nick, p]) => ({ nick, count: F.revealedSet(p).size }));
     rows.sort((a, b) => b.count - a.count || a.nick.localeCompare(b.nick));
     $("player-count").textContent = rows.length ? `${rows.length} player${rows.length === 1 ? "" : "s"}` : "No players yet";
     $("board-list").innerHTML = rows.length ? "" : '<li class="empty" style="display:block">Show them the QR code below.</li>';
     $("board-list").innerHTML += rows.map((r, k) => `
-      <li class="${r.nick === winner ? "win" : ""}">
-        <span class="rank">${r.nick === winner ? "WIN" : String(k + 1).padStart(2, "0")}</span>
+      <li class="${won.has(r.nick) ? "win" : ""}">
+        <span class="rank">${won.has(r.nick) ? "WIN" : String(k + 1).padStart(2, "0")}</span>
         <span class="name" dir="auto">${F.escapeHtml(r.nick)}</span>
         <span class="score">${r.count}/${F.TOTAL}</span>
         <span class="bar"><span style="width:${(r.count / F.TOTAL) * 100}%"></span></span>
@@ -295,7 +299,9 @@
       return;
     }
     clearInterval(monitor);
-    playing = { index, kind, end };
+    playing = { index, kind, end, token: Date.now() };
+    if (kind === "guess") setStageView("game"); // the game has started: leave "How to play"
+    pushStage();
     yt.setVolume(100);
     yt.loadVideoById({ videoId: s.youtube, startSeconds: start });
     loadedId = s.youtube;
@@ -315,6 +321,7 @@
     playing = null;
     if (yt && yt.pauseVideo) { yt.pauseVideo(); yt.setVolume(100); }
     if (message !== undefined) setMusicStatus(message);
+    pushStage();
   }
 
   function renderMusic(song, g) {
@@ -342,6 +349,49 @@
   $("btn-play-guess").addEventListener("click", () => state.game && playClip(state.game.currentSong, "guess"));
   $("btn-play-reveal").addEventListener("click", () => state.game && playClip(state.game.currentSong, "reveal"));
   $("btn-stop").addEventListener("click", () => stopClip("Stopped."));
+
+  // ── Stage screen (projector) ────────────────────────────
+  // stage.html, opened in this same browser, listens on this channel. It gets the view
+  // ("How to play" or the game), what's playing, and the revealed song's details.
+  const STAGE_VIEW_KEY = "fassila-stage-view";
+  const stageChannel = "BroadcastChannel" in window ? new BroadcastChannel("fassila-stage") : null;
+  let stageView = store.get(STAGE_VIEW_KEY) || "intro";
+
+  function stageState() {
+    const g = state.game;
+    const s = g ? SONGS[g.currentSong] : null;
+    return {
+      type: "state",
+      view: stageView,
+      music: playing ? { kind: playing.kind, index: playing.index, token: playing.token } : null,
+      reveal: g && g.announced && s ? {
+        index: g.currentSong, title: s.title, artist: s.artist || "",
+        lang: isArabic(s) ? "ar" : (s.lang || "en"),
+        youtube: s.youtube || "", range: clipRange(s, "reveal"),
+      } : null,
+    };
+  }
+  function pushStage() {
+    if (stageChannel) stageChannel.postMessage(stageState());
+    $("btn-stage-intro").classList.toggle("btn-primary", stageView === "intro");
+    $("btn-stage-intro").classList.toggle("btn-ghost", stageView !== "intro");
+    $("btn-stage-game").classList.toggle("btn-primary", stageView === "game");
+    $("btn-stage-game").classList.toggle("btn-ghost", stageView !== "game");
+    $("stage-hint").textContent = stageView === "intro"
+      ? "Showing How to play. It switches to the game when the first clip plays."
+      : "Showing the game.";
+  }
+  function setStageView(v) {
+    if (stageView === v) return;
+    stageView = v;
+    store.set(STAGE_VIEW_KEY, v);
+    pushStage();
+  }
+  if (stageChannel) stageChannel.onmessage = (e) => { if (e.data && e.data.type === "hello") pushStage(); };
+  $("btn-open-stage").addEventListener("click", () => window.open("stage.html", "fassila-stage"));
+  $("btn-stage-intro").addEventListener("click", () => setStageView("intro"));
+  $("btn-stage-game").addEventListener("click", () => setStageView("game"));
+  if (!stageChannel) $("stage-hint").textContent = "This browser can't link to the stage screen.";
 
   // ── QR code ─────────────────────────────────────────────
   function defaultPlayerUrl() {

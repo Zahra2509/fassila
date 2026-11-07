@@ -108,6 +108,20 @@ This writes `songs.locked.js` (AES-256 encrypted), which is safe to publish. The
 
 The YouTube player shows the video, which gives away the answer. Keep the host screen to yourself rather than projecting it.
 
+## Stage screen (projector)
+
+`stage.html` is a big-screen view for the room. On the host page, click **Open stage screen** and drag that window to the projector or TV (press F11 for full screen). It must run in the **same browser on the same laptop** as the host page, which drives it live:
+
+- **How to play:** an animated demo phone walks through the 5 steps, next to the QR code. Use it while you explain the rules. It uses dummy letters, never the real message.
+- **Song playing:** a spinning CD and an equalizer move while your clip plays, plus the live number of guesses.
+- **Answer revealed:** the title and artist (Arabic right-to-left), with the YouTube video playing muted. The sound stays on the host laptop.
+- **Final round:** a live leaderboard.
+- **Winners:** everyone who cracked the code, with the secret message.
+
+The **How to play** / **Show the game** buttons on the host page switch the stage, and it moves to the game by itself when the first clip plays.
+
+**Several winners:** everyone who completes all 10 CDs on the same song shares the win. After the first player finishes, the others can still claim the song that was just announced. In the final round, everyone who completes before the game ends is a winner too.
+
 ## How to host a round
 
 1. Players scan the QR code and pick a nickname. They show up under **Live progress**.

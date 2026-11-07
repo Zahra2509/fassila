@@ -220,7 +220,18 @@
     const read = () => {
       try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
     };
-    const notify = () => notifyListeners(listeners, read());
+    // Not re-entrant: a listener that writes (e.g. claiming the win) triggers a fresh pass
+    // afterwards, instead of a nested one that the outer pass would overwrite with old data.
+    let notifying = false, again = false;
+    const notify = () => {
+      if (notifying) { again = true; return; }
+      notifying = true;
+      try {
+        do { again = false; notifyListeners(listeners, read()); } while (again);
+      } finally {
+        notifying = false;
+      }
+    };
     const write = (tree) => {
       localStorage.setItem(KEY, JSON.stringify(tree));
       notify();
@@ -455,11 +466,25 @@
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
+  // Everyone who flipped all their CDs. The first finisher (game/winner) is listed first.
+  function winnersOf(game, players) {
+    const first = game && game.winner;
+    const set = new Set(Object.entries(players || {}).filter(([, p]) => p && p.finished === true).map(([n]) => n));
+    if (first) set.add(first);
+    return [...set].sort((a, b) => (a === first ? -1 : b === first ? 1 : a.localeCompare(b)));
+  }
+  // "Lina", "Lina & Omar", "Lina, Omar & Sara"
+  function joinNames(list) {
+    if (list.length <= 1) return list[0] || "";
+    return list.slice(0, -1).join(", ") + " & " + list[list.length - 1];
+  }
+
   window.Fassila = {
     LETTERS, WORDS, TOTAL,
     connect, showModeBanner, loadScript,
     sanitizeNick, normalizeLetter, revealedSet,
     buildCdRow, flipCd, hideCd,
     smallConfetti, bigConfetti, escapeHtml,
+    winnersOf, joinNames,
   };
 })();
