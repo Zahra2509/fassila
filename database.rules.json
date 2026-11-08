@@ -7,7 +7,7 @@
       ".read": true,
       ".write": true,
       "currentSong": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9" },
-      "phase": { ".validate": "newData.val() === 'songs' || newData.val() === 'final'" },
+      "phase": { ".validate": "newData.val() === 'songs' || newData.val() === 'final' || newData.val() === 'demo'" },
       "announced": { ".validate": "newData.isString() && newData.val().length <= 200" },
       "winner": { ".validate": "newData.isString() && newData.val().length <= 20 && (!data.exists() || data.val() === newData.val())" },
       "$other": { ".validate": false }
@@ -44,7 +44,7 @@
       ".read": true,
       ".write": true,
       "$songId": {
-        "$nickname": { ".validate": "newData.isBoolean() && !data.exists()" }
+        "$nickname": { ".validate": "newData.isBoolean()" }
       }
     }
   }

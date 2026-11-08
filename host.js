@@ -4,6 +4,7 @@
   const F = window.Fassila;
   const $ = (id) => document.getElementById(id);
   const ANNOUNCED_KEY = "fassila-host-announced";
+  const PRACTICE_DONE_KEY = "fassila-practice-done";
   const URL_KEY = "fassila-player-url";
 
   const store = {
@@ -17,10 +18,16 @@
   //  - songs.locked.js (encrypted with lock_songs.py, safe on GitHub): unlocked with the host password.
   const PASS_KEY = "fassila-host-password";
   let songsUnlocked = false;
+  // The practice round's song ("demo" in the song list). It flips no CD.
+  const DEMO = { id: "demo", title: "Practice song", letterIndex: null };
   function applySongDetails(details) {
     SONGS.forEach((s) => Object.assign(s, details[s.id] || {}));
+    if (details.demo) Object.assign(DEMO, details.demo);
     songsUnlocked = true;
   }
+  // The current round: "demo" during the practice round, else the song's index (0-9).
+  const curIndex = (g) => (g.phase === "demo" ? "demo" : g.currentSong);
+  const songAt = (i) => (i === "demo" ? DEMO : SONGS[i]);
 
   async function decryptSongs(locked, password) {
     const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -111,14 +118,17 @@
       return;
     }
     state.game = g;
-    if (g.announced) { announcedSet.add(g.currentSong); saveAnnounced(); }
-    const key = String(SONGS[g.currentSong].id);
+    if (g.announced && g.phase === "songs") { announcedSet.add(g.currentSong); saveAnnounced(); }
+    const key = String(songAt(curIndex(g)).id);
     if (key !== state.songKey) {
       state.songKey = key;
       unsubGuesses();
       unsubClaims();
-      unsubGuesses = db.on("guesses/" + key, (v) => { state.guesses = v || {}; render(); });
-      unsubClaims = db.on("claims/" + key, (v) => { state.claims = v || {}; render(); });
+      state.guesses = {};
+      state.claims = {};
+      unsubGuesses = db.on("guesses/" + key, (v) => { state.guesses = v || {}; render(); checkGuesses(); });
+      state.claimsLoaded = false; // don't decide anything until this round's decisions are known
+      unsubClaims = db.on("claims/" + key, (v) => { state.claims = v || {}; state.claimsLoaded = true; render(); checkGuesses(); });
     }
     render();
   });
@@ -130,15 +140,17 @@
     const g = state.game;
     if (!g) return;
     const i = g.currentSong;
-    const song = SONGS[i];
+    const isDemo = g.phase === "demo";
+    const song = songAt(curIndex(g));
     const isFinal = g.phase === "final";
 
-    $("phase-label").textContent = isFinal ? "Final round" : "Now playing";
-    $("big-song").textContent = isFinal ? "Final round!" : `Song ${i + 1} of ${SONGS.length}`;
+    $("phase-label").textContent = isFinal ? "Final round" : isDemo ? "Practice round: no CDs" : "Now playing";
+    $("big-song").textContent = isFinal ? "Final round!" : isDemo ? "Practice round" : `Song ${i + 1} of ${SONGS.length}`;
     $("secret-title").innerHTML = isFinal ? "Players are filling in the blanks" : songHtml(song);
     renderMusic(song, g);
-    $("secret-note").hidden = isFinal;
-    $("cd-num").textContent = `${song.letterIndex + 1} (${F.LETTERS[song.letterIndex]})`;
+    $("secret-note").hidden = isFinal || isDemo;
+    if (!isDemo) $("cd-num").textContent = `${song.letterIndex + 1} (${F.LETTERS[song.letterIndex]})`;
+    renderGuesses(song, g);
 
     const guessCount = Object.keys(state.guesses).length;
     const gotCount = Object.values(state.claims).filter((v) => v === true).length;
@@ -148,17 +160,23 @@
     $("stat-claims").textContent = g.announced ? gotCount : "–";
 
     $("song-dots").innerHTML = SONGS.map((s, j) => {
-      const cls = ["song-dot", announcedSet.has(j) ? "played" : "", !isFinal && j === i ? "current" : ""].join(" ");
+      const cls = ["song-dot", announcedSet.has(j) ? "played" : "", !isFinal && !isDemo && j === i ? "current" : ""].join(" ");
       return `<span class="${cls}" title="Song ${j + 1}${announcedSet.has(j) ? " (announced)" : ""}">${j + 1}</span>`;
     }).join("");
 
     const over = !!g.winner;
-    $("btn-prev").disabled = isFinal || over || i <= 0;
-    $("btn-next").disabled = isFinal || over || i >= SONGS.length - 1;
+    $("btn-prev").disabled = isFinal || over || isDemo || i <= 0;
+    $("btn-next").disabled = isFinal || over || (!isDemo && i >= SONGS.length - 1);
+    $("btn-next").textContent = isDemo ? "Start the game" : "Next song";
+    // The practice round is offered until the real game has started
+    const fresh = g.phase === "songs" && i === 0 && !g.announced && announcedSet.size === 0 &&
+      !store.get(PRACTICE_DONE_KEY) && !Object.keys(state.guesses).length;
+    $("btn-practice").hidden = !fresh;
+    $("btn-practice").disabled = !songsUnlocked || !DEMO.youtube;
     $("btn-announce").disabled = isFinal || over || !!g.announced;
     $("btn-announce").textContent = g.announced ? "Answer announced" : "Announce answer";
     const allPlayed = SONGS.every((_, j) => announcedSet.has(j));
-    $("btn-final").disabled = isFinal || over;
+    $("btn-final").disabled = isFinal || over || isDemo;
     $("final-hint").textContent = isFinal
       ? "Final round is live. Players are filling in their letters."
       : allPlayed ? "All songs played. Ready when you are!" : `${announcedSet.size} of ${SONGS.length} songs announced so far.`;
@@ -199,17 +217,28 @@
     playClip(i, "guess"); // new song: play its guessing clip (first, so the redraw below doesn't cue it paused)
     db.update("game", { currentSong: i, announced: null });
   }
+  function startGame() { // end the practice round and go to song 1
+    store.set(PRACTICE_DONE_KEY, "1");
+    playClip(0, "guess");
+    db.update("", { "game/phase": "songs", "game/currentSong": 0, "game/announced": null, "guesses/demo": null, "claims/demo": null });
+  }
   $("btn-prev").addEventListener("click", () => goTo(state.game.currentSong - 1));
-  $("btn-next").addEventListener("click", () => goTo(state.game.currentSong + 1));
+  $("btn-next").addEventListener("click", () => (state.game.phase === "demo" ? startGame() : goTo(state.game.currentSong + 1)));
+  $("btn-practice").addEventListener("click", () => {
+    if (!state.game || !songsUnlocked) return;
+    playClip("demo", "guess");
+    db.update("", { "game/phase": "demo", "game/announced": null, "guesses/demo": null, "claims/demo": null });
+  });
 
   $("btn-announce").addEventListener("click", () => {
     const g = state.game;
-    if (!g || g.phase !== "songs" || g.announced) return;
-    if (!songsUnlocked && !confirm("The song list is still locked, so players would only see \"Song " + (g.currentSong + 1) + "\". Announce anyway?")) return;
-    announcedSet.add(g.currentSong);
-    saveAnnounced();
-    db.set("game/announced", answerText(SONGS[g.currentSong]).slice(0, 200));
-    playClip(g.currentSong, "reveal"); // answer is out: play the reveal clip
+    if (!g || (g.phase !== "songs" && g.phase !== "demo") || g.announced) return;
+    if (!songsUnlocked && !confirm("The song list is still locked, so players would only see \"Song " + (g.currentSong + 1) + "\" and guesses can't be checked. Announce anyway?")) return;
+    const cur = curIndex(g);
+    if (cur !== "demo") { announcedSet.add(cur); saveAnnounced(); }
+    db.set("game/announced", answerText(songAt(cur)).slice(0, 200));
+    playClip(cur, "reveal"); // answer is out: play the reveal clip
+    checkGuesses(true);
   });
 
   $("btn-final").addEventListener("click", () => {
@@ -224,9 +253,70 @@
   $("btn-reset").addEventListener("click", async () => {
     if (!confirm("Reset the whole game? Every player loses their CDs and guesses.")) return;
     stopClip("");
+    store.del(PRACTICE_DONE_KEY);
     announcedSet = new Set();
     store.del(ANNOUNCED_KEY);
     await db.update("", { game: freshGame(), players: null, guesses: null, claims: null });
+  });
+
+  // ── Checking guesses ────────────────────────────────────
+  // After "Announce answer", this page checks every guess against the song's accepted
+  // answers (lenient: typos, accents, Arabizi…). Right guesses flip that player's CD.
+  // You can correct any decision in the guesses list. Phones never see the answers.
+  function verdictFor(song, guess) {
+    const accepts = song.accept && song.accept.length ? song.accept : [song.title];
+    return F.matchGuess(guess, accepts, [song.artist || "", ...(song.artistAlt || [])]);
+  }
+  function verdictUpdates(song, g, nick, ok) {
+    const u = { [`claims/${song.id}/${nick}`]: ok };
+    if (g.phase === "songs") {
+      const has = F.revealedSet(state.players[nick]).has(song.letterIndex);
+      if (ok && !has) u[`players/${nick}/revealed/${song.letterIndex}`] = true;
+      if (!ok && has) u[`players/${nick}/revealed/${song.letterIndex}`] = null; // undo a wrong flip
+    }
+    return u;
+  }
+  // Decides the guesses that don't have a decision yet. `announcing`: the answer was just
+  // announced and that news may not have come back from the database yet.
+  function checkGuesses(announcing) {
+    const g = state.game;
+    if (!g || !songsUnlocked || !state.claimsLoaded || (!g.announced && !announcing)) return;
+    if (g.phase !== "songs" && g.phase !== "demo") return;
+    const song = songAt(curIndex(g));
+    const updates = {};
+    for (const entry of Object.values(state.guesses)) {
+      if (!entry || !entry.nickname || state.claims[entry.nickname] !== undefined) continue;
+      Object.assign(updates, verdictUpdates(song, g, entry.nickname, verdictFor(song, entry.guess).ok));
+    }
+    if (Object.keys(updates).length) db.update("", updates).catch((e) => console.error("[Fassila] check failed", e));
+  }
+  function setVerdict(nick, ok) {
+    const g = state.game;
+    if (!g) return;
+    db.update("", verdictUpdates(songAt(curIndex(g)), g, nick, ok)).catch((e) => console.error(e));
+  }
+  function renderGuesses(song, g) {
+    const entries = Object.values(state.guesses).filter((x) => x && x.nickname).sort((a, b) => a.time - b.time);
+    $("guesses-block").hidden = g.phase === "final" || !entries.length;
+    $("guess-list").innerHTML = entries.map((x) => {
+      const v = state.claims[x.nickname];
+      const auto = songsUnlocked && g.announced ? verdictFor(song, x.guess) : null;
+      const mark = v === true ? "ok" : v === false ? "no" : "wait";
+      const label = v === true ? "Counted" : v === false ? "Not counted" : g.announced ? "Checking…" : "Waiting for the answer";
+      const nick = F.escapeHtml(x.nickname);
+      const btn = !g.announced ? "" : v === true
+        ? `<button class="btn btn-quiet" type="button" data-nick="${nick}" data-ok="0">Don't count</button>`
+        : `<button class="btn btn-quiet" type="button" data-nick="${nick}" data-ok="1">Count it</button>`;
+      return `<li class="guess-row ${mark}">
+        <span class="name" dir="auto">${nick}</span>
+        <span class="guess-text" dir="auto">${F.escapeHtml(x.guess)}</span>
+        <span class="verdict">${label}${!auto ? "" : v !== undefined && v !== auto.ok ? " <small>changed by you</small>" : ` <small>${Math.round(auto.score * 100)}% match</small>`}</span>
+        ${btn}</li>`;
+    }).join("");
+  }
+  $("guess-list").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-nick]");
+    if (b) setVerdict(b.dataset.nick, b.dataset.ok === "1");
   });
 
   // ── Music: YouTube clips ────────────────────────────────
@@ -267,7 +357,7 @@
   function onYtError(e) {
     clearInterval(monitor);
     playing = null;
-    const s = SONGS[state.game ? state.game.currentSong : 0];
+    const s = state.game ? songAt(curIndex(state.game)) : SONGS[0];
     const link = s.youtube ? `https://music.youtube.com/watch?v=${s.youtube}` : s.link;
     setMusicStatus(`YouTube won't play this one here (error ${e.data}).`, link);
   }
@@ -284,11 +374,11 @@
   }
 
   async function playClip(index, kind) {
-    const s = SONGS[index];
+    const s = songAt(index);
     const range = clipRange(s, kind);
     if (!s.youtube || !range) {
       stopClip("");
-      setMusicStatus(`No video for song ${index + 1} yet. Play it yourself.`, s.link);
+      setMusicStatus(`No video for ${index === "demo" ? "the practice song" : "song " + (index + 1)} yet. Play it yourself.`, s.link);
       return;
     }
     const [start, end] = range;
@@ -349,8 +439,8 @@
     else if (hasVideo && !playing && !$("music-status").textContent) setMusicStatus("Press Next song to start, or play the clip from here.");
   }
 
-  $("btn-play-guess").addEventListener("click", () => state.game && playClip(state.game.currentSong, "guess"));
-  $("btn-play-reveal").addEventListener("click", () => state.game && playClip(state.game.currentSong, "reveal"));
+  $("btn-play-guess").addEventListener("click", () => state.game && playClip(curIndex(state.game), "guess"));
+  $("btn-play-reveal").addEventListener("click", () => state.game && playClip(curIndex(state.game), "reveal"));
   $("btn-stop").addEventListener("click", () => stopClip("Stopped."));
 
   // ── Stage screen (projector) ────────────────────────────
@@ -364,14 +454,14 @@
 
   function stageState() {
     const g = state.game;
-    const s = g ? SONGS[g.currentSong] : null;
+    const s = g ? songAt(curIndex(g)) : null;
     return {
       type: "state",
       view: stageView,
       demoStep,
       music: playing ? { kind: playing.kind, index: playing.index, token: playing.token } : null,
       reveal: g && g.announced && s ? {
-        index: g.currentSong, title: s.title, artist: s.artist || "",
+        index: curIndex(g), title: s.title, artist: s.artist || "",
         lang: isArabic(s) ? "ar" : (s.lang || "en"),
         youtube: s.youtube || "", range: clipRange(s, "reveal"),
       } : null,

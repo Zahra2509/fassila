@@ -49,7 +49,7 @@ The rules let **anyone read and write**, but only these paths, and only in the r
 - `game/currentSong`, `game/phase`, `game/announced`, `game/winner`
 - `players/{nickname}/revealed/{0–9}` (`true`, and only once) and `players/{nickname}/finished`
 - `guesses/{songId}/{pushId}` → `{ nickname, guess, time }`
-- `claims/{songId}/{nickname}` (`true` = "I got it!", `false` = "Not me", once)
+- `claims/{songId}/{nickname}` (`true` = counted, `false` = not counted; set by the host page, which can correct it)
 
 Everything else is blocked. There are no logins, so a tech-savvy guest *could* poke at the database with dev tools. Song titles and the message are also visible in `config.js` to anyone who digs. **For a casual party game that's fine.** Don't reuse this setup for anything with prizes worth cheating for.
 
@@ -108,6 +108,25 @@ This writes `songs.locked.js` (AES-256 encrypted), which is safe to publish. The
 
 The YouTube player shows the video, which gives away the answer. Keep the host screen to yourself rather than projecting it.
 
+## Checking guesses automatically
+
+Players don't judge themselves anymore. When you press **Announce answer**, the host page checks every guess against the song's `accept` list in `songs.private.js`, and correct guesses flip that player's CD by themselves.
+
+It's lenient on purpose:
+- **Typos:** about one mistake per 5 letters ("somthing just like this"). Short words must be right after spelling is evened out, so "dina" doesn't pass for "zina".
+- **Spelling and script variants:** accents, upper/lower case, "el/al/the", missing or doubled vowels ("ya rayeh", "yarayah"), and Arabizi digits ("3az lkhil", "5ayna").
+- **Arabic variants:** أ/إ/آ, ة/ه, ى/ي, hamza and diacritics.
+- **Artist names:** a guess may include the artist's name, from `artist` or the Latin spellings in `artistAlt`.
+- **Scripts:** Arabic guesses are compared with Arabic answers and Latin with Latin, so list both in `accept`.
+
+Under the song, the host page lists every guess with **Counted** or **Not counted**, and **Count it** / **Don't count** buttons to correct any decision. Changing your mind flips the player's CD back too.
+
+## Practice round
+
+Before song 1, **Practice round first** plays the `demo` song as a full round: guessing, announcing and automatic checking, with no CDs at stake. Then **Start the game** goes to song 1.
+
+> These features need the rules in `database.rules.json` (the `demo` phase, and decisions you can change). Paste them into Firebase → Realtime Database → Rules → **Publish** whenever that file changes.
+
 ## Stage screen (projector)
 
 `stage.html` is a big-screen view for the room. On the host page, click **Open stage screen** and drag that window to the projector or TV (press F11 for full screen). It must run in the **same browser on the same laptop** as the host page, which drives it live:
@@ -127,7 +146,7 @@ The **How to play** / **Show the game** buttons on the host page switch the stag
 1. Players scan the QR code and pick a nickname. They show up under **Live progress**.
 2. Play the song shown on your screen. The title is only visible to you.
 3. Players type their guess (one per song).
-4. Press **📣 Announce answer**. Everyone sees the title next to their own guess and taps **🎵 I got it!** or **❌ Not me**. Honour system: you never judge guesses.
+4. Press **Announce answer**. Everyone sees the title, and the host page checks each guess automatically. Correct guesses flip a CD. Fix any decision in the guesses list.
 5. **Next song →** and repeat. You can play songs in any order using **Next/Previous**.
 6. Once every song has been announced, **🔤 Start final round** unlocks. Players tap their hidden CDs and type letters. Right letters flip, wrong ones get "Nope, try another one."
 7. The first player to flip all 10 wins. Their phone shows the winner screen, everyone else sees "Game over", and your screen shows confetti 🎉.

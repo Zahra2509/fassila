@@ -488,3 +488,15 @@ input[type="password"]:focus { border-color: var(--maj); outline: 1px solid var(
 /* Manual "How to play" steps */
 .demo-now { font-family: var(--f-head); color: var(--shade); font-size: 1.05rem; margin: 12px 0 8px; }
 .steps li { cursor: pointer; }
+
+/* Host: guesses list with automatic verdicts */
+.guesses { margin: 24px auto 0; max-width: 560px; text-align: left; padding-top: 18px; border-top: 1px solid var(--gold); }
+.guess-list { list-style: none; margin: 0; padding: 0; max-height: 40vh; overflow: auto; }
+.guess-row { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.4fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--maj-15); }
+.guess-row .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guess-row .guess-text { font-family: var(--f-head); color: var(--shade); overflow-wrap: anywhere; }
+.guess-row .verdict { font-family: var(--f-mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-70); white-space: nowrap; }
+.guess-row .verdict small { letter-spacing: .04em; text-transform: none; opacity: .8; }
+.guess-row.ok .verdict { color: var(--maj); }
+.guess-row.ok .verdict::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--gold); transform: rotate(45deg); }
+.guess-row .btn-quiet { height: 30px; padding: 0 6px; font-size: .6rem; }

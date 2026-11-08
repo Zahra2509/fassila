@@ -40,7 +40,7 @@
   let unsubClaims = () => {};
   db.on("game", (g) => {
     st.game = g;
-    const key = g ? String(SONGS[g.currentSong].id) : null;
+    const key = g ? (g.phase === "demo" ? "demo" : String(SONGS[g.currentSong].id)) : null;
     if (key !== st.songKey) {
       st.songKey = key;
       unsubGuesses(); unsubClaims();
@@ -70,7 +70,7 @@
     if (g && g.winner) return "v-win";
     // Without the host page in this browser, guess: intro until the game has visibly started.
     const view = st.hostSeen ? st.host.view
-      : (g && (g.announced || g.currentSong > 0 || g.phase === "final" || Object.keys(st.guesses).length) ? "game" : "intro");
+      : (g && (g.announced || g.currentSong > 0 || g.phase !== "songs" || Object.keys(st.guesses).length) ? "game" : "intro");
     if (view === "intro") return "v-intro";
     if (!g) return "v-wait";
     if (g.phase === "final") return "v-final";
@@ -84,11 +84,12 @@
     show(view);
     renderFooter(g);
     if (!g) return;
+    const cur = g.phase === "demo" ? "demo" : g.currentSong; // matches the host's music/reveal index
 
     if (view === "v-song") {
-      $("song-num").textContent = `Song ${g.currentSong + 1} of ${SONGS.length}`;
+      $("song-num").textContent = g.phase === "demo" ? "Practice round" : `Song ${g.currentSong + 1} of ${SONGS.length}`;
       const m = st.host.music;
-      const listening = !!(m && m.kind === "guess" && m.index === g.currentSong);
+      const listening = !!(m && m.kind === "guess" && m.index === cur);
       $("listen").classList.toggle("playing", listening);
       $("song-status").textContent = listening ? "Listen closely…" : "Type your guess on your phone";
       const n = Object.keys(st.guesses).length;
@@ -96,7 +97,7 @@
     }
 
     if (view === "v-reveal") {
-      const r = st.host.reveal && st.host.reveal.index === g.currentSong ? st.host.reveal : null;
+      const r = st.host.reveal && st.host.reveal.index === cur ? st.host.reveal : null;
       let title = r ? r.title : g.announced;
       let artist = r ? r.artist : "";
       if (!r && g.announced.includes(" — ")) [title, artist] = g.announced.split(" — ");
@@ -109,7 +110,7 @@
       const got = Object.values(st.claims).filter((v) => v === true).length;
       $("got-count").textContent = `${got} got it`;
       const m = st.host.music;
-      if (r && r.youtube && m && m.kind === "reveal" && m.index === g.currentSong) playVideo(r, m.token);
+      if (r && r.youtube && m && m.kind === "reveal" && m.index === cur) playVideo(r, m.token);
       else if (!m) pauseVideo();
     }
 
@@ -138,7 +139,7 @@
   function renderFooter(g) {
     const n = Object.keys(st.players).length;
     $("player-count").textContent = n ? `${n} player${n === 1 ? "" : "s"}` : "";
-    const cur = g ? g.currentSong : -1;
+    const cur = g && g.phase !== "demo" ? g.currentSong : -1;
     const final = g && g.phase === "final";
     $("dots").innerHTML = SONGS.map((_, j) => {
       const cls = ["song-dot", final || j < cur ? "played" : "", !final && j === cur ? "current" : ""].join(" ");

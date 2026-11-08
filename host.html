@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Marcellus&family=Karla:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=202611072054">
+  <link rel="stylesheet" href="style.css?v=202611080223">
 </head>
 <body class="page-host">
   <div id="mode-banner" class="mode-banner" hidden></div>
@@ -53,6 +53,11 @@
           </div>
 
           <div class="song-dots" id="song-dots" aria-label="Songs announced so far"></div>
+
+          <div class="guesses" id="guesses-block" hidden>
+            <span class="label">Guesses · checked automatically when you announce</span>
+            <ul class="guess-list" id="guess-list"></ul>
+          </div>
         </section>
 
         <section class="music" id="music">
@@ -71,6 +76,7 @@
             <button id="btn-prev" class="btn btn-ghost" type="button">Previous song</button>
             <button id="btn-next" class="btn btn-ghost" type="button">Next song</button>
           </div>
+          <button id="btn-practice" class="btn btn-ghost" type="button" hidden>Practice round first</button>
           <button id="btn-announce" class="btn btn-primary" type="button">Announce answer</button>
           <button id="btn-final" class="btn btn-primary" type="button">Start final round</button>
           <p class="hint" id="final-hint"></p>
@@ -120,12 +126,12 @@
     <footer class="foot">Guess <i></i> Flip <i></i> Crack the code</footer>
   </div>
 
-  <script src="config.js?v=202611072054"></script>
+  <script src="config.js?v=202611080223"></script>
   <!-- Real titles and clip times. Local only (in .gitignore); the page still works without it. -->
-  <script src="songs.private.js?v=202611072054"></script>
+  <script src="songs.private.js?v=202611080223"></script>
   <!-- Same list, encrypted with lock_songs.py: this is the copy that goes on GitHub. -->
-  <script src="songs.locked.js?v=202611072054"></script>
-  <script src="common.js?v=202611072054"></script>
-  <script src="host.js?v=202611072054"></script>
+  <script src="songs.locked.js?v=202611080223"></script>
+  <script src="common.js?v=202611080223"></script>
+  <script src="host.js?v=202611080223"></script>
 </body>
 </html>

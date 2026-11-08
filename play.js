@@ -79,8 +79,7 @@
 
   db.on("game", (g) => {
     state.game = g;
-    const song = g ? SONGS[g.currentSong] : null;
-    const key = song ? String(song.id) : null;
+    const key = g ? roundKey(g) : null;
     if (key !== state.songKey) {
       state.songKey = key;
       state.myGuess = undefined;
@@ -112,6 +111,11 @@
 
   db.on("players", (all) => { state.all = all || {}; render(); });
 
+  // "demo" during the practice round, else the current song's id
+  function roundKey(g) {
+    return g.phase === "demo" ? "demo" : String(SONGS[g.currentSong].id);
+  }
+
   // ── Rendering ───────────────────────────────────────────
   function render() {
     const g = state.game;
@@ -137,7 +141,8 @@
     if (count < F.TOTAL) winClaimed = false;
 
     const isFinal = g.phase === "final";
-    $("song-label").textContent = isFinal ? "Final round!" : `Song ${g.currentSong + 1} of ${SONGS.length}`;
+    const isDemo = g.phase === "demo";
+    $("song-label").textContent = isFinal ? "Final round!" : isDemo ? "Practice round" : `Song ${g.currentSong + 1} of ${SONGS.length}`;
     document.querySelectorAll(".cd").forEach((cd) => cd.classList.toggle("selectable", isFinal && !g.winner && !cd.classList.contains("revealed")));
 
     // Game over: everyone who completes all 10 CDs wins. During the songs, players who
@@ -175,7 +180,6 @@
     }
     setSelected(null);
 
-    const song = SONGS[g.currentSong];
     if (g.announced) {
       show("panel-claim");
       $("answer-title").textContent = g.announced;
@@ -184,27 +188,19 @@
       $("answer-title").dir = arabicAnswer ? "rtl" : "auto";
       $("claim-guess").textContent = state.myGuess || "nothing";
       const msg = $("claim-msg");
-      const buttons = $("claim-buttons");
+      $("claim-buttons").hidden = true; // the host page checks guesses now
       if (state.claim === true) {
-        buttons.hidden = true;
-        setMsg(msg, revealed.has(song.letterIndex) ? "Nailed it. Your CD flipped." : "Nailed it!", "good", false);
-        $("status").textContent = "Nice ear! Wait for the next song.";
+        setMsg(msg, isDemo ? "Correct! In the real game, that flips a CD." : "Correct! Your CD flipped.", "good", false);
+        $("status").textContent = isDemo ? "That's how it works. Get ready!" : "Nice ear! Wait for the next song.";
       } else if (state.claim === false) {
-        buttons.hidden = true;
-        setMsg(msg, "No worries, the next one's yours.", "", false);
-        $("status").textContent = "Shake it off. Next song coming up.";
+        setMsg(msg, "Not this time. The next one's yours.", "", false);
+        $("status").textContent = isDemo ? "Just practice. The real game starts soon." : "Shake it off. Next song coming up.";
       } else if (state.myGuess === null) {
-        buttons.hidden = true;
         setMsg(msg, "No guess, no glory. Catch the next one!", "", false);
         $("status").textContent = "Answer's out!";
-      } else if (state.myGuess === undefined) {
-        buttons.hidden = true;
-        $("status").textContent = "Answer's out!";
       } else {
-        buttons.hidden = false;
-        $("btn-got").disabled = $("btn-not").disabled = false;
-        if (!msg.classList.contains("bad")) setMsg(msg, "Be honest…", "", false);
-        $("status").textContent = "Answer's out! Did you get it?";
+        setMsg(msg, "Checking your answer…", "", false);
+        $("status").textContent = "Answer's out!";
       }
       return;
     }
@@ -264,8 +260,8 @@
   }
 
   // ── Actions ─────────────────────────────────────────────
-  // Sends a guess for the song at `songIndex`. Rejected unless that is the live song.
-  async function submitGuess(songIndex, text) {
+  // Sends a guess for round `key` ("demo" or a song id). Rejected unless that round is live.
+  async function submitGuess(key, text) {
     const msg = $("guess-msg");
     text = String(text || "").trim();
     if (!text) { setMsg(msg, "Type something first!", "bad"); return false; }
@@ -276,17 +272,16 @@
     store.set(COOLDOWN_KEY, String(now));
 
     const live = await db.get("game");
-    if (!live || live.phase !== "songs" || live.currentSong !== songIndex || live.announced || live.winner) {
+    if (!live || (live.phase !== "songs" && live.phase !== "demo") || roundKey(live) !== String(key) || live.announced || live.winner) {
       setMsg(msg, "Too late! That song's not playing anymore.", "bad");
       return false;
     }
-    const song = SONGS[songIndex];
-    const list = (await db.get("guesses/" + song.id)) || {};
+    const list = (await db.get("guesses/" + key)) || {};
     if (Object.values(list).some((x) => x && x.nickname === me)) {
       setMsg(msg, "One guess per song!", "bad");
       return false;
     }
-    await db.push("guesses/" + song.id, { nickname: me, guess: text.slice(0, 100), time: now });
+    await db.push("guesses/" + key, { nickname: me, guess: text.slice(0, 100), time: now });
     setMsg(msg, "Locked in!", "good");
     return true;
   }
@@ -348,7 +343,7 @@
   $("guess-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!state.game) return;
-    const ok = await submitGuess(state.game.currentSong, $("guess-input").value);
+    const ok = await submitGuess(roundKey(state.game), $("guess-input").value);
     if (ok) $("guess-input").value = "";
   });
   $("btn-got").addEventListener("click", () => claim(true));
