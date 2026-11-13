@@ -168,6 +168,11 @@
     syncCds(revealed);
     const count = revealed.size;
     $("count").textContent = `${count} / ${F.TOTAL} CDs`;
+    $("panel-practice").hidden = true;
+    const practicing = !!(g && g.phase === "demo" && P);
+    $("cd-row").hidden = practicing;
+    $("practice-row").hidden = !practicing;
+    if (practicing) renderPractice(g);
 
     const panels = ["panel-wait", "panel-guess", "panel-claim", "panel-final", "panel-over"];
     const show = (id) => panels.forEach((p) => ($(p).hidden = p !== id));
@@ -186,7 +191,7 @@
     const isFinal = g.phase === "final";
     const isDemo = g.phase === "demo";
     $("song-label").textContent = isFinal ? "Final round!" : isDemo ? "Practice round" : `Song ${g.currentSong + 1} of ${SONGS.length}`;
-    document.querySelectorAll(".cd").forEach((cd) => cd.classList.toggle("selectable", isFinal && !g.winner && !cd.classList.contains("revealed")));
+    cds.forEach((cd) => cd.classList.toggle("selectable", isFinal && !g.winner && !cd.classList.contains("revealed")));
 
     // Game over: everyone who completes all 10 CDs wins. During the songs, players who
     // haven't claimed the current song yet can still claim it, so ties share the win.
@@ -233,17 +238,21 @@
       const msg = $("claim-msg");
       $("claim-buttons").hidden = true; // the host page checks guesses now
       if (state.claim === true) {
-        setMsg(msg, isDemo ? "Correct! In the real game, that flips a CD." : "Correct! Your CD flipped.", "good", false);
+        setMsg(msg, isDemo ? "Correct! A practice CD flipped." : "Correct! Your CD flipped.", "good", false);
         $("status").textContent = isDemo ? "That's how it works. Get ready!" : "Nice ear! Wait for the next song.";
       } else if (state.claim === false) {
         setMsg(msg, "Not this time. The next one's yours.", "", false);
-        $("status").textContent = isDemo ? "Just practice. The real game starts soon." : "Shake it off. Next song coming up.";
+        $("status").textContent = isDemo ? "No worries: guess its letter in the practice final round below." : "Shake it off. Next song coming up.";
       } else if (state.myGuess === null) {
         setMsg(msg, "No guess, no glory. Catch the next one!", "", false);
         $("status").textContent = "Answer's out!";
       } else {
         setMsg(msg, "Checking your answer…", "", false);
         $("status").textContent = "Answer's out!";
+      }
+      if (isDemo && P) {
+        $("panel-practice").hidden = false;
+        if (practiceDone()) $("status").textContent = "You've got the game!";
       }
       return;
     }
@@ -320,6 +329,77 @@
     el.className = "msg" + (kind ? " " + kind : "");
     if (animate) { void el.offsetWidth; el.classList.add("pop"); }
   }
+
+  // ── Practice round: a mini code (config.js PRACTICE) ────
+  // Some CDs start flipped, the practice song flips one more (if guessed right), and after the
+  // answer players try the final round on the rest. Checked on the phone: it's not a secret.
+  const P = typeof PRACTICE === "object" && PRACTICE && PRACTICE.message ? PRACTICE : null;
+  const P_LETTERS = P ? Array.from(P.message.replace(/\s+/g, "")) : [];
+  const pcds = P ? F.buildCdRow($("practice-row"), P.message) : [];
+  const P_KEY = NICK_KEY + "-practice";
+  let pFlips = new Set();
+  try { pFlips = new Set(JSON.parse(store.get(P_KEY) || "[]")); } catch (e) {}
+  let pSelected = null, pFirst = true, pCelebrated = false, pLockUntil = 0;
+
+  function practiceRevealed() {
+    const r = new Set([...(P.given || []), ...pFlips]);
+    if (state.claim === true && P.songLetter != null) r.add(P.songLetter);
+    return r;
+  }
+  const practiceDone = () => P && practiceRevealed().size >= P_LETTERS.length;
+
+  function renderPractice(g) {
+    if (!g.announced && pFlips.size) { pFlips = new Set(); store.set(P_KEY, "[]"); pCelebrated = false; } // a new practice round
+    const r = practiceRevealed();
+    const open = !!g.announced; // the mini final round opens once the answer is out
+    pcds.forEach((cd, i) => {
+      if (r.has(i)) {
+        if (F.flipCd(cd, !pFirst, P_LETTERS[i]) && !pFirst) setTimeout(() => F.smallConfetti(cd), 250);
+      } else if (cd.classList.contains("revealed")) F.hideCd(cd);
+      cd.classList.toggle("selectable", open && !r.has(i));
+    });
+    pFirst = false;
+    $("count").textContent = `${r.size} / ${P_LETTERS.length} CDs`;
+    if (pSelected === null || r.has(pSelected)) pSelected = P_LETTERS.findIndex((_, i) => !r.has(i));
+    if (pSelected < 0) pSelected = null;
+    pcds.forEach((cd, i) => cd.classList.toggle("selected", open && i === pSelected));
+    $("practice-target").textContent = pSelected === null ? "" : `(CD ${pSelected + 1} picked)`;
+    const done = r.size >= P_LETTERS.length;
+    $("practice-play").hidden = done;
+    $("practice-done").hidden = !done;
+    $("practice-word").textContent = P.message;
+    if (done && !pCelebrated) { pCelebrated = true; F.bigConfetti(); }
+  }
+
+  pcds.forEach((cd, i) => cd.addEventListener("click", () => {
+    const g = state.game;
+    if (!g || g.phase !== "demo" || !g.announced || practiceRevealed().has(i)) return;
+    pSelected = i;
+    render();
+    $("practice-input").focus();
+  }));
+
+  $("practice-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const msg = $("practice-msg");
+    const guess = F.normalizeLetter($("practice-input").value);
+    $("practice-input").value = "";
+    if (pSelected === null) { setMsg(msg, "Tap a hidden CD first!", "bad"); return; }
+    if (!guess) { setMsg(msg, "Type a letter first!", "bad"); return; }
+    if (Array.from(guess).length !== 1) { setMsg(msg, "Just one letter!", "bad"); return; }
+    if (Date.now() < pLockUntil) { setMsg(msg, "Easy tiger, wait a sec...", "bad"); return; }
+    if (guess === F.normalizeLetter(P_LETTERS[pSelected])) {
+      pFlips.add(pSelected);
+      store.set(P_KEY, JSON.stringify([...pFlips]));
+      setMsg(msg, "Yes! That's the one.", "good");
+    } else {
+      pLockUntil = Date.now() + LETTER_COOLDOWN_MS;
+      setMsg(msg, "Nope, try another one.", "bad");
+      const cd = pcds[pSelected];
+      cd.classList.remove("shake"); void cd.offsetWidth; cd.classList.add("shake");
+    }
+    render();
+  });
 
   // ── Actions ─────────────────────────────────────────────
   // Sends a guess for round `key` ("demo" or a song id). Rejected unless that round is live.

@@ -45,3 +45,12 @@ const INTRO_JINGLE = {
   from: "0:00",
   to: "0:09",
 };
+
+// The practice round: a mini code that works like the real game.
+// Two CDs start flipped, the practice song (Ya Rayah) flips `songLetter`,
+// and players test the final round on the last one. Not a secret, so it lives here.
+const PRACTICE = {
+  message: "حفلة",
+  given: [0, 1],   // ح ف already flipped
+  songLetter: 2,   // ل: flips when the practice song is guessed right
+};

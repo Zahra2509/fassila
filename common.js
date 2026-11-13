@@ -347,13 +347,14 @@
   }
 
   // Lays the CDs out right to left, one group per word.
-  function buildCdRow(el) {
+  // `message` defaults to the game's secret message (the practice round uses its own)
+  function buildCdRow(el, message) {
     el.innerHTML = "";
     el.classList.add("cd-row");
     el.setAttribute("dir", "rtl");
     const cds = [];
     let i = 0;
-    for (const word of WORDS) {
+    for (const word of message ? message.trim().split(/\s+/) : WORDS) {
       const w = document.createElement("span");
       w.className = "cd-word";
       for (const _ of Array.from(word)) {
@@ -366,11 +367,12 @@
     return cds;
   }
 
-  function flipCd(cd, animate) {
+  function flipCd(cd, animate, letter) {
     if (cd.classList.contains("revealed")) return false;
     const i = Number(cd.dataset.index);
-    cd.querySelector(".cd-back .cd-glyph").textContent = LETTERS[i];
-    cd.setAttribute("aria-label", `CD ${i + 1}: ${LETTERS[i]}`);
+    const ch = letter || LETTERS[i];
+    cd.querySelector(".cd-back .cd-glyph").textContent = ch;
+    cd.setAttribute("aria-label", `CD ${i + 1}: ${ch}`);
     if (!animate) cd.classList.add("no-anim");
     cd.classList.add("revealed");
     if (!animate) requestAnimationFrame(() => requestAnimationFrame(() => cd.classList.remove("no-anim")));

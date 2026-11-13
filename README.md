@@ -123,7 +123,7 @@ Under the song, the host page lists every guess with **Counted** or **Not counte
 
 ## Practice round
 
-Before song 1, **Practice round first** plays the `demo` song as a full round: guessing, announcing and automatic checking, with no CDs at stake. Then **Start the game** goes to song 1.
+Before song 1, **Practice round first** plays the `demo` song as a full mini-game. Phones show a 4-CD practice code (`PRACTICE` in `config.js`, حفلة) with two CDs already flipped. Guessing the song right flips the third, and after the announcement players try the final round on the last CD, ending with "Well done, you've got the game!". Then **Start the game** goes to song 1.
 
 > These features need the rules in `database.rules.json` (the `demo` phase, and decisions you can change). Paste them into Firebase → Realtime Database → Rules → **Publish** whenever that file changes.
 

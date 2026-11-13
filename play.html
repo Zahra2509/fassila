@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Marcellus&family=Karla:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=202611131401">
+  <link rel="stylesheet" href="style.css?v=202611131411">
 </head>
 <body class="page-play">
   <div id="mode-banner" class="mode-banner" hidden></div>
@@ -42,6 +42,7 @@
       <section id="game" hidden>
         <div class="board">
           <div id="cd-row"></div>
+          <div id="practice-row" hidden></div>
           <div id="song-label" class="song-label">Song 1 of 10</div>
           <div id="status" class="status"></div>
           <span id="count" class="token">0 / 10</span>
@@ -73,6 +74,24 @@
             <button id="btn-not" class="btn btn-ghost" type="button">Not me</button>
           </div>
           <p id="claim-msg" class="msg"></p>
+        </div>
+
+        <!-- Practice round: a mini final round on the practice code -->
+        <div id="panel-practice" class="panel" hidden>
+          <span class="label">Practice final round</span>
+          <div id="practice-play">
+            <p>Now try the final round: tap the hidden CD and guess its letter. <span id="practice-target" class="final-target"></span></p>
+            <form id="practice-form" class="inline" autocomplete="off">
+              <input id="practice-input" class="letter-input" type="text" maxlength="2" dir="rtl" lang="ar" placeholder="؟" aria-label="Letter">
+              <button class="btn btn-primary" type="submit">Fill the blank!</button>
+            </form>
+            <p id="practice-msg" class="msg"></p>
+          </div>
+          <div id="practice-done" class="center" hidden>
+            <p class="answer" style="margin-bottom:.2em">Well done, you've got the game!</p>
+            <p class="winner-message" lang="ar" dir="rtl" id="practice-word" style="margin:0"></p>
+            <p class="muted" style="margin:0">That's how you crack the code. The real game starts in a moment.</p>
+          </div>
         </div>
 
         <!-- Final round -->
@@ -112,8 +131,8 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611131401"></script>
-  <script src="common.js?v=202611131401"></script>
-  <script src="play.js?v=202611131401"></script>
+  <script src="config.js?v=202611131411"></script>
+  <script src="common.js?v=202611131411"></script>
+  <script src="play.js?v=202611131411"></script>
 </body>
 </html>
