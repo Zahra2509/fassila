@@ -37,3 +37,11 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "272755859567",
   appId: "1:272755859567:web:ecdf0ef14a9778dd1f2d9a",
 };
+
+// The TV show's entrance music, for a nostalgic opening: the "Intro jingle" button on the
+// host page plays it. From "Souvenirs de Fassila - ذكريات فاصلة" on YouTube.
+const INTRO_JINGLE = {
+  youtube: "YJDvCACnMLU",
+  from: "0:00",
+  to: "0:09",
+};

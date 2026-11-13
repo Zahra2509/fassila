@@ -27,7 +27,11 @@
   }
   // The current round: "demo" during the practice round, else the song's index (0-9).
   const curIndex = (g) => (g.phase === "demo" ? "demo" : g.currentSong);
-  const songAt = (i) => (i === "demo" ? DEMO : SONGS[i]);
+  // The TV show's intro jingle (config.js), played with the "Intro jingle" button
+  const INTRO = typeof INTRO_JINGLE === "object" && INTRO_JINGLE
+    ? { id: "intro", title: "Intro jingle", youtube: INTRO_JINGLE.youtube, intro: [INTRO_JINGLE.from, INTRO_JINGLE.to] }
+    : { id: "intro", title: "Intro jingle" };
+  const songAt = (i) => (i === "intro" ? INTRO : i === "demo" ? DEMO : SONGS[i]);
 
   async function decryptSongs(locked, password) {
     const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -156,7 +160,7 @@
     const gotCount = Object.values(state.claims).filter((v) => v === true).length;
     $("details").hidden = isFinal;
     $("stat-guesses").textContent = guessCount;
-    $("stat-announced").textContent = g.announced ? "Out" : "Hidden";
+    updateCountdown();
     $("stat-claims").textContent = g.announced ? gotCount : "–";
 
     $("song-dots").innerHTML = SONGS.map((s, j) => {
@@ -215,19 +219,19 @@
   function goTo(i) {
     if (!state.game || i < 0 || i >= SONGS.length) return;
     playClip(i, "guess"); // new song: play its guessing clip (first, so the redraw below doesn't cue it paused)
-    db.update("game", { currentSong: i, announced: null });
+    db.update("game", { currentSong: i, announced: null, closesAt: null });
   }
   function startGame() { // end the practice round and go to song 1
     store.set(PRACTICE_DONE_KEY, "1");
     playClip(0, "guess");
-    db.update("", { "game/phase": "songs", "game/currentSong": 0, "game/announced": null, "guesses/demo": null, "claims/demo": null });
+    db.update("", { "game/phase": "songs", "game/currentSong": 0, "game/announced": null, "game/closesAt": null, "guesses/demo": null, "claims/demo": null });
   }
   $("btn-prev").addEventListener("click", () => goTo(state.game.currentSong - 1));
   $("btn-next").addEventListener("click", () => (state.game.phase === "demo" ? startGame() : goTo(state.game.currentSong + 1)));
   $("btn-practice").addEventListener("click", () => {
     if (!state.game || !songsUnlocked) return;
     playClip("demo", "guess");
-    db.update("", { "game/phase": "demo", "game/announced": null, "guesses/demo": null, "claims/demo": null });
+    db.update("", { "game/phase": "demo", "game/announced": null, "game/closesAt": null, "guesses/demo": null, "claims/demo": null });
   });
 
   $("btn-announce").addEventListener("click", () => {
@@ -236,7 +240,7 @@
     if (!songsUnlocked && !confirm("The song list is still locked, so players would only see \"Song " + (g.currentSong + 1) + "\" and guesses can't be checked. Announce anyway?")) return;
     const cur = curIndex(g);
     if (cur !== "demo") { announcedSet.add(cur); saveAnnounced(); }
-    db.set("game/announced", answerText(songAt(cur)).slice(0, 200));
+    db.update("game", { announced: answerText(songAt(cur)).slice(0, 200), closesAt: null });
     playClip(cur, "reveal"); // answer is out: play the reveal clip
     checkGuesses(true);
   });
@@ -247,7 +251,7 @@
     const left = SONGS.length - SONGS.filter((_, j) => announcedSet.has(j)).length;
     if (left > 0 && !confirm(`${left} song${left === 1 ? " hasn't" : "s haven't"} been announced yet. Start the final round anyway? There's no going back to the songs.`)) return;
     stopClip("Music off for the final round.");
-    db.update("game", { phase: "final", announced: null });
+    db.update("game", { phase: "final", announced: null, closesAt: null });
   });
 
   $("btn-reset").addEventListener("click", async () => {
@@ -258,6 +262,25 @@
     store.del(ANNOUNCED_KEY);
     await db.update("", { game: freshGame(), players: null, guesses: null, claims: null });
   });
+
+  // ── 30-second answer countdown ──────────────────────────
+  // Starts when the guessing clip ends (or with the "30 s countdown" button). The closing
+  // time goes into the database, so phones and the stage count down to the same moment.
+  const ANSWER_SECONDS = 30;
+  function startCountdown() {
+    const g = state.game;
+    if (!g || g.announced || g.closesAt || (g.phase !== "songs" && g.phase !== "demo")) return;
+    db.set("game/closesAt", Math.round(db.now() + ANSWER_SECONDS * 1000));
+  }
+  function updateCountdown() {
+    const g = state.game;
+    if (!g) return;
+    const left = g.closesAt ? Math.ceil((g.closesAt - db.now()) / 1000) : null;
+    $("stat-announced").textContent = g.announced ? "Revealed" : left == null ? "Open" : left > 0 ? `${left} s` : "Closed";
+    $("btn-countdown").disabled = !!(g.announced || g.closesAt || (g.phase !== "songs" && g.phase !== "demo"));
+  }
+  setInterval(updateCountdown, 250);
+  $("btn-countdown").addEventListener("click", startCountdown);
 
   // ── Checking guesses ────────────────────────────────────
   // After "Announce answer", this page checks every guess against the song's accepted
@@ -354,12 +377,33 @@
     return ytReady;
   }
 
+  // What YouTube's error codes mean, in plain words
+  const YT_ERRORS = {
+    2: "the video link looks wrong",
+    5: "the browser's video player hiccuped",
+    100: "the video was removed or made private",
+    101: "its owner doesn't allow it to play on other websites",
+    150: "its owner doesn't allow it to play on other websites",
+    152: "its owner doesn't allow it to play on other websites",
+    153: "the browser didn't tell YouTube which page is playing it (often a privacy setting or extension)",
+  };
+  let lastRequest = null; // { index, kind, retried }
   function onYtError(e) {
     clearInterval(monitor);
     playing = null;
-    const s = state.game ? songAt(curIndex(state.game)) : SONGS[0];
+    pushStage();
+    // Many errors are temporary: try once more before giving up
+    if (lastRequest && !lastRequest.retried) {
+      const r = lastRequest;
+      setMusicStatus("YouTube hiccuped, trying again…");
+      setTimeout(() => playClip(r.index, r.kind, true), 1500);
+      return;
+    }
+    const s = lastRequest ? songAt(lastRequest.index) : state.game ? songAt(curIndex(state.game)) : SONGS[0];
     const link = s.youtube ? `https://music.youtube.com/watch?v=${s.youtube}` : s.link;
-    setMusicStatus(`YouTube won't play this one here (error ${e.data}).`, link);
+    const why = YT_ERRORS[e.data] || "of an unknown problem";
+    setMusicStatus(`YouTube won't play this here because ${why} (error ${e.data}). Play it from YouTube Music instead:`, link);
+    console.warn("[Fassila] YouTube error", e.data, "for", s.youtube);
   }
 
   function setMusicStatus(text, link) {
@@ -373,12 +417,14 @@
     }
   }
 
-  async function playClip(index, kind) {
+  async function playClip(index, kind, retried) {
     const s = songAt(index);
     const range = clipRange(s, kind);
+    lastRequest = { index, kind, retried: !!retried };
     if (!s.youtube || !range) {
       stopClip("");
-      setMusicStatus(`No video for ${index === "demo" ? "the practice song" : "song " + (index + 1)} yet. Play it yourself.`, s.link);
+      setMusicStatus(index === "intro" ? "No intro jingle set in config.js."
+        : `No video for ${index === "demo" ? "the practice song" : "song " + (index + 1)} yet. Play it yourself.`, s.link);
       return;
     }
     const [start, end] = range;
@@ -398,13 +444,17 @@
     yt.setVolume(100);
     yt.loadVideoById({ videoId: s.youtube, startSeconds: start });
     loadedId = s.youtube;
-    setMusicStatus(`Playing the ${kind === "guess" ? "guessing clip" : "reveal"}: ${fmt(start)} to ${fmt(end)}`);
+    setMusicStatus(`Playing the ${kind === "guess" ? "guessing clip" : kind === "intro" ? "intro jingle" : "reveal"}: ${fmt(start)} to ${fmt(end)}`);
     monitor = setInterval(() => {
       if (!yt || !playing) return;
       const t = yt.getCurrentTime ? yt.getCurrentTime() : 0;
       if (t < start - 1) return; // still seeking
       const left = end - t;
-      if (left <= 0) { stopClip(kind === "guess" ? "Clip done. Replay it if they beg." : "Reveal done."); return; }
+      if (left <= 0) {
+        stopClip(kind === "guess" ? "Clip done. Replay it if they beg." : kind === "intro" ? "Jingle done. Let the show begin!" : "Reveal done.");
+        if (kind === "guess") startCountdown(); // answers close 30 s after the guessing clip
+        return;
+      }
       if (left < FADE) yt.setVolume(Math.max(0, Math.round((left / FADE) * 100)));
     }, 80);
   }
@@ -442,6 +492,7 @@
   $("btn-play-guess").addEventListener("click", () => state.game && playClip(curIndex(state.game), "guess"));
   $("btn-play-reveal").addEventListener("click", () => state.game && playClip(curIndex(state.game), "reveal"));
   $("btn-stop").addEventListener("click", () => stopClip("Stopped."));
+  $("btn-intro").addEventListener("click", () => playClip("intro", "intro"));
 
   // ── Stage screen (projector) ────────────────────────────
   // stage.html, opened in this same browser, listens on this channel. It gets the view
@@ -449,7 +500,7 @@
   const STAGE_VIEW_KEY = "fassila-stage-view";
   const stageChannel = "BroadcastChannel" in window ? new BroadcastChannel("fassila-stage") : null;
   let stageView = store.get(STAGE_VIEW_KEY) || "intro";
-  const DEMO_STEPS = ["Scan and pick a nickname", "Listen, then guess", "Be honest", "Final round", "Crack the code"];
+  const DEMO_STEPS = ["Scan and pick a nickname", "Listen, then guess", "The answer is revealed", "Final round", "Crack the code"];
   let demoStep = 0;
 
   function stageState() {

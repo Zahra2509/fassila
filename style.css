@@ -500,3 +500,7 @@ input[type="password"]:focus { border-color: var(--maj); outline: 1px solid var(
 .guess-row.ok .verdict { color: var(--maj); }
 .guess-row.ok .verdict::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--gold); transform: rotate(45deg); }
 .guess-row .btn-quiet { height: 30px; padding: 0 6px; font-size: .6rem; }
+.ph-result { font-size: 1.5vh; color: var(--maj); font-weight: 500; }
+.ph-result::before { content: ""; display: inline-block; width: .7vh; height: .7vh; margin-right: .8vh; background: var(--gold); transform: rotate(45deg); }
+/* Stage: last 10 seconds of the answer countdown */
+.stage-status.ticking { color: var(--maj); font-family: var(--f-head); font-size: clamp(1.6rem, 5vh, 3.4rem); }

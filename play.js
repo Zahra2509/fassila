@@ -37,6 +37,9 @@
   function askNickname() {
     $("loading").hidden = true;
     $("join").hidden = false;
+    let fresh = false;
+    try { fresh = sessionStorage.getItem("fassila-new-game") === "1"; sessionStorage.removeItem("fassila-new-game"); } catch (e) {}
+    if (fresh) setMsg($("join-msg"), "New game! Pick a nickname.", "good", false);
     $("nick-input").focus();
     return new Promise((resolve) => {
       $("join-form").addEventListener("submit", async (e) => {
@@ -103,11 +106,20 @@
   });
 
   db.on("players/" + me, (p) => {
-    // After a reset the host wipes all players: quietly sign back in.
-    if (p === null) db.set(`players/${me}/finished`, false);
-    state.player = p || {};
+    // The game doesn't know this name: the host reset it (or it's an old name from another
+    // party). Forget the nickname and ask for a new one.
+    if (p === null) { forgetMe(); return; }
+    state.player = p;
     render();
   });
+  function forgetMe() {
+    try {
+      localStorage.removeItem(NICK_KEY);
+      localStorage.removeItem(COOLDOWN_KEY);
+      sessionStorage.setItem("fassila-new-game", "1");
+    } catch (e) {}
+    location.reload();
+  }
 
   db.on("players", (all) => { state.all = all || {}; render(); });
 
@@ -205,20 +217,39 @@
       return;
     }
 
-    // Guessing
+    // Guessing (until the 30-second countdown runs out)
     show("panel-guess");
     const form = $("guess-form");
+    const left = secondsLeft(g);
+    const closed = left != null && left <= 0;
     if (typeof state.myGuess === "string") {
       form.hidden = true;
       $("guess-locked").hidden = false;
       $("guess-locked-text").textContent = state.myGuess;
-      $("status").textContent = "Guess locked in. Fingers crossed.";
+      $("status").textContent = closed ? "Answers are closed. Fingers crossed." : "Guess locked in. Fingers crossed.";
+    } else if (closed) {
+      form.hidden = true;
+      $("guess-locked").hidden = true;
+      setMsg($("guess-msg"), "Time's up! Answers are closed for this song.", "bad", false);
+      $("status").textContent = "Time's up!";
     } else {
       form.hidden = false;
       $("guess-locked").hidden = true;
-      $("status").textContent = "Listen up and type your guess!";
+      $("status").textContent = left != null ? `Answers close in ${left} s. Type your guess!` : "Listen up and type your guess!";
     }
   }
+
+  // Seconds before answers close for this song (null = no countdown yet)
+  function secondsLeft(g) {
+    if (!g || !g.closesAt || g.announced) return null;
+    return Math.max(0, Math.ceil((g.closesAt - db.now()) / 1000));
+  }
+  // Keep the countdown ticking between database updates
+  let lastLeft = null;
+  setInterval(() => {
+    const left = secondsLeft(state.game);
+    if (left !== lastLeft) { lastLeft = left; render(); }
+  }, 250);
 
   function syncCds(revealed) {
     cds.forEach((cd, i) => {
@@ -274,6 +305,10 @@
     const live = await db.get("game");
     if (!live || (live.phase !== "songs" && live.phase !== "demo") || roundKey(live) !== String(key) || live.announced || live.winner) {
       setMsg(msg, "Too late! That song's not playing anymore.", "bad");
+      return false;
+    }
+    if (live.closesAt && db.now() > live.closesAt + 1000) { // 1 s grace for slow networks
+      setMsg(msg, "Time's up! Answers are closed for this song.", "bad");
       return false;
     }
     const list = (await db.get("guesses/" + key)) || {};

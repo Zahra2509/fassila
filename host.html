@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Marcellus&family=Karla:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=202611080223">
+  <link rel="stylesheet" href="style.css?v=202611131335">
 </head>
 <body class="page-host">
   <div id="mode-banner" class="mode-banner" hidden></div>
@@ -48,7 +48,7 @@
 
           <div class="details" id="details">
             <div><span class="label">Guesses</span><span class="value" id="stat-guesses">0</span></div>
-            <div><span class="label">Answer</span><span class="value" id="stat-announced">Hidden</span></div>
+            <div><span class="label">Answers</span><span class="value" id="stat-announced">Open</span></div>
             <div><span class="label">Got it</span><span class="value" id="stat-claims">–</span></div>
           </div>
 
@@ -67,6 +67,8 @@
             <button id="btn-play-guess" class="btn btn-ghost" type="button">Play clip</button>
             <button id="btn-play-reveal" class="btn btn-ghost" type="button">Play reveal</button>
             <button id="btn-stop" class="btn btn-ghost" type="button">Stop</button>
+            <button id="btn-intro" class="btn btn-ghost" type="button" title="The TV show's entrance music">Intro jingle</button>
+            <button id="btn-countdown" class="btn btn-ghost" type="button" title="Starts by itself when the guessing clip ends">30 s countdown</button>
           </div>
           <p class="hint" id="music-status"></p>
         </section>
@@ -126,12 +128,12 @@
     <footer class="foot">Guess <i></i> Flip <i></i> Crack the code</footer>
   </div>
 
-  <script src="config.js?v=202611080223"></script>
+  <script src="config.js?v=202611131335"></script>
   <!-- Real titles and clip times. Local only (in .gitignore); the page still works without it. -->
-  <script src="songs.private.js?v=202611080223"></script>
+  <script src="songs.private.js?v=202611131335"></script>
   <!-- Same list, encrypted with lock_songs.py: this is the copy that goes on GitHub. -->
-  <script src="songs.locked.js?v=202611080223"></script>
-  <script src="common.js?v=202611080223"></script>
-  <script src="host.js?v=202611080223"></script>
+  <script src="songs.locked.js?v=202611131335"></script>
+  <script src="common.js?v=202611131335"></script>
+  <script src="host.js?v=202611131335"></script>
 </body>
 </html>

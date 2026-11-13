@@ -47,8 +47,12 @@
 
   function firebaseAdapter(d) {
     const ref = (p) => (p ? d.ref(p) : d.ref());
+    // Firebase tells each device how far its clock is from the server's, so countdowns agree
+    let skew = 0;
+    d.ref(".info/serverTimeOffset").on("value", (snap) => { skew = Number(snap.val()) || 0; });
     return {
       mode: "firebase",
+      now: () => Date.now() + skew,
       on(path, cb) {
         const r = ref(path);
         const h = (snap) => cb(snap.val());
@@ -170,6 +174,7 @@
     }
     return {
       mode: "lan",
+      now: () => Date.now(),
       base: info.base,
       on(path, cb) {
         const l = { path, cb, last: undefined };
@@ -242,6 +247,7 @@
     let counter = 0;
     const api = {
       mode: "local",
+      now: () => Date.now(),
       on(path, cb) {
         const l = { path, cb, last: undefined };
         listeners.add(l);

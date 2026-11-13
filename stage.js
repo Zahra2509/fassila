@@ -53,6 +53,13 @@
     render();
   });
   db.on("players", (p) => { st.players = p || {}; render(); });
+  // Redraw while a countdown runs
+  let lastLeft = null;
+  setInterval(() => {
+    const g = st.game;
+    const left = g && g.closesAt && !g.announced ? Math.ceil((g.closesAt - db.now()) / 1000) : null;
+    if (left !== lastLeft) { lastLeft = left; render(); }
+  }, 250);
 
   // ── Views ───────────────────────────────────────────────
   const VIEWS = ["v-wait", "v-intro", "v-song", "v-reveal", "v-final", "v-win"];
@@ -91,7 +98,11 @@
       const m = st.host.music;
       const listening = !!(m && m.kind === "guess" && m.index === cur);
       $("listen").classList.toggle("playing", listening);
-      $("song-status").textContent = listening ? "Listen closely…" : "Type your guess on your phone";
+      const left = g.closesAt ? Math.max(0, Math.ceil((g.closesAt - db.now()) / 1000)) : null;
+      $("song-status").textContent = listening ? "Listen closely…"
+        : left == null ? "Type your guess on your phone"
+        : left > 0 ? `Answers close in ${left} s` : "Time's up! Answers are closed";
+      $("song-status").classList.toggle("ticking", left != null && left > 0 && left <= 10);
       const n = Object.keys(st.guesses).length;
       $("guess-count").textContent = `${n} guess${n === 1 ? "" : "es"} in`;
     }
