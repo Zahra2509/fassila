@@ -504,3 +504,15 @@ input[type="password"]:focus { border-color: var(--maj); outline: 1px solid var(
 .ph-result::before { content: ""; display: inline-block; width: .7vh; height: .7vh; margin-right: .8vh; background: var(--gold); transform: rotate(45deg); }
 /* Stage: last 10 seconds of the answer countdown */
 .stage-status.ticking { color: var(--maj); font-family: var(--f-head); font-size: clamp(1.6rem, 5vh, 3.4rem); }
+
+/* Nickname suggestions when a name is taken */
+.nick-ideas { margin-top: 10px; }
+.nick-ideas .btn { flex: 1 1 auto; height: 42px; letter-spacing: .08em; text-transform: none; font-family: var(--f-body); font-size: .95rem; }
+
+/* Stage: Guess the game */
+body.name-hidden .stage-brand { visibility: hidden; }
+#v-teaser > .view { width: 100%; }
+.teaser-mark { width: 9vh; height: 9vh; margin-bottom: 1vh; animation: rise .6s ease; }
+.teaser-title { font-family: var(--f-ar); font-weight: 700; color: var(--shade); font-size: clamp(4rem, 19vh, 13rem); line-height: 1.2; animation: rise .8s ease; }
+#v-teaser .rule { margin: 2vh auto; }
+.teaser-latin { font-family: var(--f-head); color: var(--maj); font-size: clamp(1.4rem, 4.4vh, 3rem); letter-spacing: .3em; text-transform: uppercase; padding-left: .3em; }

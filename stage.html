@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Marcellus&family=Karla:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=202611131335">
+  <link rel="stylesheet" href="style.css?v=202611131401">
 </head>
 <body class="page-stage">
   <div id="mode-banner" class="mode-banner" hidden></div>
@@ -24,6 +24,26 @@
     </header>
 
     <main class="stage-main">
+      <!-- Guess the game: intro song, then the name is revealed -->
+      <section id="v-teaser" class="view center" hidden>
+        <div id="teaser-hidden" class="view center">
+          <span class="label">Guess the game</span>
+          <div class="stage-big">Which show is this?</div>
+          <div class="listen" id="teaser-listen">
+            <div class="disc"><span></span></div>
+            <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <p class="stage-status" id="teaser-status">Listen…</p>
+        </div>
+        <div id="teaser-reveal" class="view center" hidden>
+          <img class="teaser-mark" src="assets/logo.svg" alt="" onerror="this.remove()">
+          <div class="teaser-title" lang="ar" dir="rtl">فاصلة</div>
+          <div class="teaser-latin">Fassila</div>
+          <div class="rule"><i></i></div>
+          <p class="stage-status">Tonight's game</p>
+        </div>
+      </section>
+
       <!-- Waiting -->
       <section id="v-wait" class="view center" hidden>
         <span class="label">Get ready</span>
@@ -129,8 +149,8 @@
     </footer>
   </div>
 
-  <script src="config.js?v=202611131335"></script>
-  <script src="common.js?v=202611131335"></script>
-  <script src="stage.js?v=202611131335"></script>
+  <script src="config.js?v=202611131401"></script>
+  <script src="common.js?v=202611131401"></script>
+  <script src="stage.js?v=202611131401"></script>
 </body>
 </html>

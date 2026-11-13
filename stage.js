@@ -62,7 +62,7 @@
   }, 250);
 
   // ── Views ───────────────────────────────────────────────
-  const VIEWS = ["v-wait", "v-intro", "v-song", "v-reveal", "v-final", "v-win"];
+  const VIEWS = ["v-wait", "v-teaser", "v-intro", "v-song", "v-reveal", "v-final", "v-win"];
   let currentView = null;
   function show(id) {
     if (id === currentView) return;
@@ -78,6 +78,7 @@
     // Without the host page in this browser, guess: intro until the game has visibly started.
     const view = st.hostSeen ? st.host.view
       : (g && (g.announced || g.currentSong > 0 || g.phase !== "songs" || Object.keys(st.guesses).length) ? "game" : "intro");
+    if (view === "teaser") return "v-teaser";
     if (view === "intro") return "v-intro";
     if (!g) return "v-wait";
     if (g.phase === "final") return "v-final";
@@ -89,6 +90,7 @@
     const g = st.game;
     const view = pickView(g);
     show(view);
+    renderTeaser(view);
     renderFooter(g);
     if (!g) return;
     const cur = g.phase === "demo" ? "demo" : g.currentSong; // matches the host's music/reveal index
@@ -145,6 +147,23 @@
     } else {
       celebrated = "";
     }
+  }
+
+  // Guess the game: the name stays hidden (even in the header) until the host reveals it
+  let teaserShown = false;
+  function renderTeaser(view) {
+    const on = view === "v-teaser";
+    const revealed = on && !!st.host.teaserRevealed;
+    document.body.classList.toggle("name-hidden", on); // the header brand stays hidden: the reveal is the brand
+    if (!on) { teaserShown = false; return; }
+    const m = st.host.music;
+    const listening = !!(m && m.kind === "intro");
+    $("teaser-listen").classList.toggle("playing", listening);
+    $("teaser-status").textContent = listening ? "Listen…" : "Who remembers this show?";
+    $("teaser-hidden").hidden = revealed;
+    $("teaser-reveal").hidden = !revealed;
+    if (revealed && !teaserShown) F.bigConfetti();
+    teaserShown = revealed;
   }
 
   function renderFooter(g) {

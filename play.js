@@ -42,19 +42,50 @@
     if (fresh) setMsg($("join-msg"), "New game! Pick a nickname.", "good", false);
     $("nick-input").focus();
     return new Promise((resolve) => {
-      $("join-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const nick = F.sanitizeNick($("nick-input").value);
+      const tryJoin = async (raw) => {
+        const nick = F.sanitizeNick(raw);
         const msg = $("join-msg");
+        $("nick-ideas").innerHTML = "";
         if (!nick) { setMsg(msg, "Gotta have a name!", "bad"); return; }
-        const existing = await db.get("players/" + nick);
-        if (existing) { setMsg(msg, "That name's taken! Try another one.", "bad"); return; }
-        await db.set(`players/${nick}/finished`, false);
+        // Names must be unique, ignoring capitals ("sara" = "Sara"), so winners are never ambiguous
+        const players = (await db.get("players")) || {};
+        const taken = new Set(Object.keys(players).map((n) => n.toLowerCase()));
+        let claimed = false;
+        if (!taken.has(nick.toLowerCase())) {
+          // Claim the name in one step, so two phones typing it at once can't both get it
+          claimed = await db.transaction("players/" + nick, (cur) => (cur ? undefined : { finished: false }));
+        }
+        if (!claimed) {
+          taken.add(nick.toLowerCase());
+          const ideas = nickIdeas(nick, taken);
+          setMsg(msg, `Someone's already called ${nick}! Pick one of these, or type another cute nickname:`, "bad");
+          $("nick-ideas").innerHTML = ideas.map((x) => `<button class="btn btn-ghost" type="button" data-nick="${F.escapeHtml(x)}">${F.escapeHtml(x)}</button>`).join("");
+          return;
+        }
         store.set(NICK_KEY, nick);
         $("join").hidden = true;
         resolve(nick);
+      };
+      $("join-form").addEventListener("submit", (e) => { e.preventDefault(); tryJoin($("nick-input").value); });
+      $("nick-ideas").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-nick]");
+        if (b) { $("nick-input").value = b.dataset.nick; tryJoin(b.dataset.nick); }
       });
     });
+  }
+
+  // Three free variations of a taken nickname
+  function nickIdeas(nick, taken) {
+    const base = nick.slice(0, 10).replace(/^\p{Ll}/u, (c) => c.toUpperCase()); // "sara" → "Sara"
+    const patterns = [(n) => `DJ ${n}`, (n) => `${n} Star`, (n) => `Captain ${n}`, (n) => `${n} 212`,
+      (n) => `Lucky ${n}`, (n) => `${n} the Great`, (n) => `Little ${n}`, (n) => `MC ${n}`, (n) => `${n} Jr`];
+    const out = [];
+    for (const p of patterns.sort(() => Math.random() - 0.5)) {
+      const idea = F.sanitizeNick(p(base));
+      if (!taken.has(idea.toLowerCase()) && !out.includes(idea)) out.push(idea);
+      if (out.length === 3) break;
+    }
+    return out;
   }
 
   // ── State ───────────────────────────────────────────────

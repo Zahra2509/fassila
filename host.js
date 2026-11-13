@@ -277,10 +277,17 @@
     if (!g) return;
     const left = g.closesAt ? Math.ceil((g.closesAt - db.now()) / 1000) : null;
     $("stat-announced").textContent = g.announced ? "Revealed" : left == null ? "Open" : left > 0 ? `${left} s` : "Closed";
-    $("btn-countdown").disabled = !!(g.announced || g.closesAt || (g.phase !== "songs" && g.phase !== "demo"));
+    // One button: start the countdown, stop it while it runs, or reopen answers once closed
+    $("btn-countdown").disabled = !!(g.announced || (g.phase !== "songs" && g.phase !== "demo"));
+    $("btn-countdown").textContent = left == null ? "30 s countdown" : left > 0 ? "Stop countdown" : "Reopen answers";
   }
   setInterval(updateCountdown, 250);
-  $("btn-countdown").addEventListener("click", startCountdown);
+  $("btn-countdown").addEventListener("click", () => {
+    const g = state.game;
+    if (!g || g.announced) return;
+    if (g.closesAt) db.set("game/closesAt", null); // stop, or reopen after it ran out
+    else startCountdown();
+  });
 
   // ── Checking guesses ────────────────────────────────────
   // After "Announce answer", this page checks every guess against the song's accepted
@@ -499,7 +506,9 @@
   // ("How to play" or the game), what's playing, and the revealed song's details.
   const STAGE_VIEW_KEY = "fassila-stage-view";
   const stageChannel = "BroadcastChannel" in window ? new BroadcastChannel("fassila-stage") : null;
-  let stageView = store.get(STAGE_VIEW_KEY) || "intro";
+  // Views: "teaser" (Guess the game) → "intro" (How to play) → "game"
+  let stageView = store.get(STAGE_VIEW_KEY) || "teaser";
+  let teaserRevealed = false;
   const DEMO_STEPS = ["Scan and pick a nickname", "Listen, then guess", "The answer is revealed", "Final round", "Crack the code"];
   let demoStep = 0;
 
@@ -510,6 +519,7 @@
       type: "state",
       view: stageView,
       demoStep,
+      teaserRevealed,
       music: playing ? { kind: playing.kind, index: playing.index, token: playing.token } : null,
       reveal: g && g.announced && s ? {
         index: curIndex(g), title: s.title, artist: s.artist || "",
@@ -520,6 +530,11 @@
   }
   function pushStage() {
     if (stageChannel) stageChannel.postMessage(stageState());
+    $("btn-stage-teaser").classList.toggle("btn-primary", stageView === "teaser");
+    $("btn-stage-teaser").classList.toggle("btn-ghost", stageView !== "teaser");
+    $("teaser-controls").hidden = stageView !== "teaser";
+    $("btn-teaser-reveal").textContent = teaserRevealed ? "Hide the name again" : "Reveal the name";
+    $("teaser-now").textContent = teaserRevealed ? "Name revealed! Next: How to play." : "The name is hidden. Play the intro, let them guess!";
     $("btn-stage-intro").classList.toggle("btn-primary", stageView === "intro");
     $("btn-stage-intro").classList.toggle("btn-ghost", stageView !== "intro");
     $("btn-stage-game").classList.toggle("btn-primary", stageView === "game");
@@ -528,8 +543,8 @@
     $("demo-now").textContent = `Step ${demoStep + 1} of ${DEMO_STEPS.length}: ${DEMO_STEPS[demoStep]}`;
     $("btn-demo-prev").disabled = demoStep === 0;
     $("btn-demo-next").disabled = demoStep === DEMO_STEPS.length - 1;
-    $("stage-hint").textContent = stageView === "intro"
-      ? "Showing How to play. It switches to the game when the first clip plays."
+    $("stage-hint").textContent = stageView === "teaser" ? "Showing Guess the game."
+      : stageView === "intro" ? "Showing How to play. It switches to the game when the first clip plays."
       : "Showing the game.";
   }
   function setStageView(v) {
@@ -552,6 +567,9 @@
   $("btn-open-stage").addEventListener("click", () => window.open("stage.html", "fassila-stage"));
   $("btn-stage-intro").addEventListener("click", () => { demoStep = 0; setStageView("intro"); pushStage(); });
   $("btn-stage-game").addEventListener("click", () => setStageView("game"));
+  $("btn-stage-teaser").addEventListener("click", () => { teaserRevealed = false; setStageView("teaser"); pushStage(); });
+  $("btn-teaser-play").addEventListener("click", () => playClip("intro", "intro"));
+  $("btn-teaser-reveal").addEventListener("click", () => { teaserRevealed = !teaserRevealed; pushStage(); });
   if (!stageChannel) $("stage-hint").textContent = "This browser can't link to the stage screen.";
 
   // ── QR code ─────────────────────────────────────────────
